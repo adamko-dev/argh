@@ -1,12 +1,13 @@
 package dev.adamko.githubassetpublish.internal
 
-import java.io.File
 import java.io.OutputStream.nullOutputStream
 import java.math.BigInteger
+import java.nio.file.Path
 import java.security.DigestOutputStream
 import java.security.MessageDigest
+import kotlin.io.path.inputStream
 
-internal fun File.computeChecksum(algorithm: String): String {
+internal fun Path.computeChecksum(algorithm: String): String {
   val md = MessageDigest.getInstance(algorithm)
   DigestOutputStream(nullOutputStream(), md).use { os ->
     inputStream().use { it.transferTo(os) }

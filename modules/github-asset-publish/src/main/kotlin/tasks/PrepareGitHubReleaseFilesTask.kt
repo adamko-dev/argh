@@ -1,21 +1,25 @@
-@file:OptIn(ExperimentalSerializationApi::class)
+@file:OptIn(ExperimentalSerializationApi::class, ExperimentalPathApi::class)
 
 package dev.adamko.githubassetpublish.tasks
 
 import dev.adamko.githubassetpublish.internal.computeChecksum
 import dev.adamko.githubassetpublish.internal.model.GradleModuleMetadata
 import dev.adamko.githubassetpublish.internal.model.MutableGradleModuleMetadata
-import java.io.File
+import dev.adamko.githubassetpublish.internal.model.MutableGradleModuleMetadata.Companion.saveTo
+import java.nio.file.Path
 import javax.inject.Inject
+import kotlin.io.path.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
-import kotlinx.serialization.json.encodeToStream
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.file.RelativePath
-import org.gradle.api.tasks.*
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity.RELATIVE
+import org.gradle.api.tasks.TaskAction
 
 abstract class PrepareGitHubReleaseFilesTask
 @Inject
@@ -23,58 +27,65 @@ internal constructor(
   private val fs: FileSystemOperations,
 ) : DefaultTask() {
 
+  /**
+   * The output directory for this task.
+   *
+   * Will contain all files to be attached as assets to a GitHub Release.
+   */
   @get:OutputDirectory
   abstract val destinationDirectory: DirectoryProperty
 
+  /**
+   * Output of the Maven Publish task.
+   */
   @get:InputFiles
-  @get:PathSensitive(PathSensitivity.RELATIVE)
+  @get:PathSensitive(RELATIVE)
   abstract val buildDirMavenDirectory: DirectoryProperty
 
   @TaskAction
   protected fun taskAction() {
-    val repoDir = buildDirMavenDirectory.get().asFile
-    val destinationDir = destinationDirectory.get().asFile
+    val repoDir = buildDirMavenDirectory.get().asFile.toPath()
+    val destinationDir = destinationDirectory.get().asFile.toPath()
 
     logger.info("[$path] processing buildDirMavenRepo: $repoDir")
 
-    syncFiles(
+    relocateFiles(
       sourceDir = repoDir,
       destinationDir = destinationDir,
     )
 
-    val syncedModuleMetadataFiles = destinationDir.moduleMetadataFiles()
-    updateGradleModuleMetadata(syncedModuleMetadataFiles)
-    createChecksumFiles(syncedModuleMetadataFiles)
+    updateRelocatedFiles(destinationDir)
 
     logger.lifecycle("[$path] outputDir:${buildDirMavenDirectory.get().asFile.invariantSeparatorsPath}")
   }
 
-  private fun File.moduleMetadataFiles(): List<File> {
-    return walk()
-      .filter { it.isFile && it.extension == "module" }
-      .filter { moduleFile ->
+
+  private fun Path.moduleMetadataFiles(): Sequence<Pair<Path, MutableGradleModuleMetadata>> =
+    walk()
+      .filter { it.isRegularFile() && it.extension == "module" }
+      .mapNotNull { moduleFile ->
         try {
-          moduleFile.inputStream().use { source ->
-            json.decodeFromStream(MutableGradleModuleMetadata.serializer(), source)
-          }
-          true
+          val metadata = MutableGradleModuleMetadata.loadFrom(moduleFile)
+          moduleFile to metadata
         } catch (ex: Exception) {
-          logger.warn("[$path] Failed to decode Gradle Module Metadata file ${moduleFile.invariantSeparatorsPath}, $ex")
-          false
+          logger.warn("[$path] failed to load moduleFile ${moduleFile.invariantSeparatorsPathString}", ex)
+          null
         }
       }
-      .toList()
-  }
 
-  private fun syncFiles(
-    sourceDir: File,
-    destinationDir: File,
+  private fun relocateFiles(
+    sourceDir: Path,
+    destinationDir: Path,
   ) {
+
     fs.sync {
       into(destinationDir)
+      from(sourceDir)
+
       include(
         "**/*.jar",
         "**/*.module",
+        "**/*.klib",
       )
       exclude(
         "**/*.md5",
@@ -84,75 +95,89 @@ internal constructor(
         "**/maven-metadata.xml",
         "**/*.pom",
       )
+
+      eachFile {
+        // remove directories
+        relativePath = RelativePath(true, sourceName)
+      }
+
       includeEmptyDirs = false
-
-      sourceDir.moduleMetadataFiles().forEach { moduleFile ->
-        val moduleMetadata = moduleFile.inputStream().use { stream ->
-          json.decodeFromStream(GradleModuleMetadata.serializer(), stream)
-        }
-        val moduleVersion = moduleMetadata.component.version
-        val moduleName = moduleMetadata.component.module
-
-        from(moduleFile.parentFile)
-
-        val snapshotVersion = moduleFile.nameWithoutExtension
-          .substringAfter("$moduleName-", "")
-
-        val isSnapshot = moduleVersion.endsWith("-SNAPSHOT")
-            && snapshotVersion != moduleVersion
-
-        // Update filenames:
-        // - If a snapshot version, replace the timestamp with 'SNAPSHOT'.
-        // - Remove directories (can't attach directories to GitHub Release).
-        eachFile {
-
-          val newFileName = if (isSnapshot) {
-            sourceName.replace("-$snapshotVersion", "-${moduleVersion}")
-          } else {
-            sourceName
-          }
-
-          relativePath = RelativePath(true, newFileName)
-        }
-      }
     }
   }
 
-  private fun updateGradleModuleMetadata(
-    moduleMetadataFiles: List<File>,
+  private fun updateRelocatedFiles(
+    destinationDir: Path,
   ) {
-    moduleMetadataFiles.forEach { moduleFile ->
-      val moduleMetadata = moduleFile.inputStream().use { source ->
-        json.decodeFromStream(MutableGradleModuleMetadata.serializer(), source)
-      }
-      if (moduleMetadata.component.url?.startsWith("../../") == true) {
-        moduleMetadata.component.url = moduleMetadata.component.url?.substringAfterLast("/")
-      }
-
-      moduleMetadata.variants.forEach { variant ->
-        variant.availableAt?.let { availableAt ->
-          if (availableAt.url.startsWith("../../")) {
-            availableAt.url = availableAt.url.substringAfterLast("/")
-          }
-        }
-      }
-      moduleFile.outputStream().use { sink ->
-        json.encodeToStream(MutableGradleModuleMetadata.serializer(), moduleMetadata, sink)
-      }
+    destinationDir.moduleMetadataFiles().forEach { (moduleFile, metadata) ->
+      updateModuleMetadata(moduleFile, metadata)
+      createIvyModuleFile(moduleFile, metadata)
+      createModuleChecksums(moduleFile)
     }
   }
 
-  private fun createChecksumFiles(
-    moduleMetadataFiles: List<File>,
+  private fun updateModuleMetadata(
+    moduleFile: Path,
+    metadata: MutableGradleModuleMetadata,
   ) {
-    moduleMetadataFiles.forEach { file ->
-      setOf(
-        "256",
-        "512",
-      ).forEach {
-        val checksum = file.computeChecksum("SHA-$it")
-        file.resolveSibling(file.name + ".sha$it").writeText(checksum)
+    // Gradle is hardcoded to publish modules to a Maven layout,
+    // but we relocate all files to be in the same directory.
+    // So, we can remove the relative paths.
+    if (metadata.component.url?.startsWith("../../") == true) {
+      metadata.component.url = metadata.component.url?.substringAfterLast("/")
+    }
+
+    metadata.variants.forEach { variant ->
+      variant.files.forEach { file ->
+        if (file.url.startsWith("../../")) {
+          file.url = file.url.substringAfterLast("/")
+        }
       }
+
+      variant.availableAt?.let { aa ->
+        if (aa.url.startsWith("../../")) {
+          aa.url = aa.url.substringAfterLast("/")
+        }
+      }
+    }
+
+    metadata.saveTo(moduleFile)
+  }
+
+  private fun createIvyModuleFile(
+    moduleFile: Path,
+    metadata: GradleModuleMetadata,
+  ) {
+    // Create dummy Ivy file (otherwise Gradle can't find the Module Metadata file).
+    // Only one Ivy file is required, pointing to the root module.
+    // (i.e. KMP libraries have multiple modules, but only one root module.)
+    val rootModuleName = metadata.component.module + "-" + metadata.component.version
+    if (moduleFile.nameWithoutExtension == rootModuleName) {
+      moduleFile
+        .resolveSibling("$rootModuleName.ivy.xml")
+        .writeText(
+          // language=xml
+          """
+          |<?xml version="1.0"?>
+          |<ivy-module version="2.0"
+          |            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          |            xsi:noNamespaceSchemaLocation="https://ant.apache.org/ivy/schemas/ivy.xsd">
+          |    <!-- do_not_remove: published-with-gradle-metadata -->
+          |    <info organisation="${metadata.component.group}" module="${metadata.component.module}" revision="${metadata.component.version}" />
+          |</ivy-module>
+          |""".trimMargin()
+        )
+    }
+  }
+
+  private fun createModuleChecksums(
+    moduleFile: Path,
+  ) {
+    setOf(
+      "256",
+      "512",
+    ).forEach {
+      val checksum = moduleFile.computeChecksum("SHA-$it")
+      moduleFile.resolveSibling(moduleFile.name + ".sha$it").writeText(checksum)
     }
   }
 

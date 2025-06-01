@@ -5,10 +5,12 @@ import org.gradle.kotlin.dsl.*
 
 fun RepositoryHandler.githubReleaseAssets() {
   ivy("https://github.com/") {
-    name = "GitHub Release Assets"
+    name = "GitHubReleaseAssets"
     patternLayout {
-      setM2compatible(true)
-      artifact("[organisation]/releases/download/v[revision]/[module]-[revision](-[classifier]).[ext]")
+      ivy("[orgPath]/releases/download/v[revision]/[module]-[revision].ivy.xml")
+      ivy("[orgPath]/releases/download/v[revision]/[module]-[revision].module")
+
+      artifact("[orgPath]/releases/download/v[revision]/[artifact]-[revision](-[classifier]).[ext]")
     }
     metadataSources {
       gradleMetadata()

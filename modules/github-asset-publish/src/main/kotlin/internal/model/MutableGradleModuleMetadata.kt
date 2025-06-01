@@ -2,21 +2,27 @@
 
 package dev.adamko.githubassetpublish.internal.model
 
-import dev.adamko.githubassetpublish.internal.model.GradleModuleMetadataSpec.AttributeValue
+import dev.adamko.githubassetpublish.internal.model.GradleModuleMetadata.AttributeValue
+import java.nio.file.Path
+import kotlin.io.path.inputStream
+import kotlin.io.path.outputStream
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 
 @Serializable
 internal data class MutableGradleModuleMetadata(
   @EncodeDefault
-  override var formatVersion: String = "1.1",
+  override val formatVersion: String = "1.1",
   override var component: Component,
   override var createdBy: CreatedBy,
   @EncodeDefault
   override var variants: MutableList<Variant> = mutableListOf(),
-) : GradleModuleMetadataSpec {
+) : GradleModuleMetadata {
 
   @Serializable
   data class Component(
@@ -25,17 +31,17 @@ internal data class MutableGradleModuleMetadata(
     override var version: String,
     override var url: String? = null,
     override var attributes: MutableMap<String, AttributeValue> = mutableMapOf(),
-  ) : GradleModuleMetadataSpec.Component
+  ) : GradleModuleMetadata.Component
 
   @Serializable
   data class CreatedBy(
     override var gradle: Gradle? = null
-  ) : GradleModuleMetadataSpec.CreatedBy {
+  ) : GradleModuleMetadata.CreatedBy {
     @Serializable
     data class Gradle(
       override var version: String,
       override var buildId: String? = null,
-    ) : GradleModuleMetadataSpec.CreatedBy.Gradle
+    ) : GradleModuleMetadata.CreatedBy.Gradle
   }
 
   @Serializable
@@ -48,7 +54,7 @@ internal data class MutableGradleModuleMetadata(
     override var dependencyConstraints: MutableList<DependencyConstraint> = mutableListOf(),
     override var files: MutableList<VariantFile> = mutableListOf(),
     override var capabilities: MutableList<Capability> = mutableListOf(),
-  ) : GradleModuleMetadataSpec.Variant
+  ) : GradleModuleMetadata.Variant
 
   @Serializable
   data class Dependency(
@@ -61,7 +67,7 @@ internal data class MutableGradleModuleMetadata(
     override var requestedCapabilities: MutableList<Capability> = mutableListOf(),
     override var endorseStrictVersions: Boolean? = null,
     override var thirdPartyCompatibility: ThirdPartyCompatibility? = null
-  ) : GradleModuleMetadataSpec.Dependency
+  ) : GradleModuleMetadata.Dependency
 
   @Serializable
   data class DependencyConstraint(
@@ -70,7 +76,7 @@ internal data class MutableGradleModuleMetadata(
     override var version: VersionConstraint? = null,
     override var reason: String? = null,
     override var attributes: MutableMap<String, AttributeValue> = mutableMapOf(),
-  ) : GradleModuleMetadataSpec.DependencyConstraint
+  ) : GradleModuleMetadata.DependencyConstraint
 
   @Serializable
   data class VersionConstraint(
@@ -78,20 +84,20 @@ internal data class MutableGradleModuleMetadata(
     override var prefers: String? = null,
     override var strictly: String? = null,
     override var rejects: MutableList<String> = mutableListOf(),
-  ) : GradleModuleMetadataSpec.VersionConstraint
+  ) : GradleModuleMetadata.VersionConstraint
 
   @Serializable
   data class Exclude(
     override var group: String,
     override var module: String,
-  ) : GradleModuleMetadataSpec.Exclude
+  ) : GradleModuleMetadata.Exclude
 
   @Serializable
   data class Capability(
     override var group: String,
     override var name: String,
     override var version: String,
-  ) : GradleModuleMetadataSpec.Capability
+  ) : GradleModuleMetadata.Capability
 
   @Serializable
   data class VariantFile(
@@ -102,7 +108,7 @@ internal data class MutableGradleModuleMetadata(
     override var sha256: String,
     override var sha1: String,
     override var md5: String,
-  ) : GradleModuleMetadataSpec.VariantFile
+  ) : GradleModuleMetadata.VariantFile
 
   @Serializable
   data class AvailableAt(
@@ -110,12 +116,12 @@ internal data class MutableGradleModuleMetadata(
     override var group: String,
     override var module: String,
     override var version: String,
-  ) : GradleModuleMetadataSpec.AvailableAt
+  ) : GradleModuleMetadata.AvailableAt
 
   @Serializable
   data class ThirdPartyCompatibility(
     override var artifactSelector: ArtifactSelector? = null
-  ) : GradleModuleMetadataSpec.ThirdPartyCompatibility
+  ) : GradleModuleMetadata.ThirdPartyCompatibility
 
   @Serializable
   data class ArtifactSelector(
@@ -123,5 +129,24 @@ internal data class MutableGradleModuleMetadata(
     override var type: String? = null,
     override var extension: String? = null,
     override var classifier: String? = null,
-  ) : GradleModuleMetadataSpec.ArtifactSelector
+  ) : GradleModuleMetadata.ArtifactSelector
+
+  companion object {
+    private val json = Json {
+      prettyPrint = true
+      prettyPrintIndent = "  "
+    }
+
+    fun loadFrom(file: Path): MutableGradleModuleMetadata {
+      file.inputStream().use { source ->
+        return json.decodeFromStream(serializer(), source)
+      }
+    }
+
+    fun MutableGradleModuleMetadata.saveTo(file: Path) {
+      file.outputStream().use { sink ->
+        json.encodeToStream(serializer(), this, sink)
+      }
+    }
+  }
 }
