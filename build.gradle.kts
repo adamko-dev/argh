@@ -8,7 +8,6 @@ group = "adamko-dev.github-asset-publish"
 version = "0.0.1"
 
 tasks.updateDaemonJvm {
-  @Suppress("UnstableApiUsage")
   languageVersion = JavaLanguageVersion.of(21)
 }
 
