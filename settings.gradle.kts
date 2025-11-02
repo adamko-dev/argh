@@ -17,7 +17,14 @@ dependencyResolutionManagement {
   }
 }
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 include(
-  ":modules:github-asset-publish",
-  ":modules:github-asset-repository",
+  ":modules:gradle-plugin-publisher",
+  ":modules:gradle-plugin-repository",
+  ":modules:lib-asset-uploader",
+  ":modules:lib-gmm",
+  ":modules:lib-gmm-rewriter",
+  ":modules:maven-plugin-publisher",
+  ":modules:maven-plugin-repository",
 )

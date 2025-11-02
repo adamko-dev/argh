@@ -4,8 +4,6 @@ plugins {
   `kotlin-dsl` apply false
 }
 
-group = "adamko-dev.github-asset-publish"
-version = "0.0.1"
 
 tasks.updateDaemonJvm {
   languageVersion = JavaLanguageVersion.of(21)
