@@ -1,73 +1,99 @@
 package dev.adamko.githubassetpublish.lib
 
+import dev.adamko.githubassetpublish.lib.Logger.Companion.warn
 import dev.adamko.githubassetpublish.lib.internal.computeChecksum
 import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
 import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata
 import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata.Companion.saveTo
 import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import kotlin.io.path.*
 
 /**
  * Converts files published to a local directory in a Maven layout to files that can be attached to a GitHub Release.
  *
- * @param[gradleModuleMetadataFile] GMM file of the root module.
- * @param[destinationDir] The output directory for this task.
  * Will contain all files that should be attached as assets to a GitHub Release.
  */
 class PrepareGitHubAssetsAction(
-  private val gradleModuleMetadataFile: Path,
-  private val destinationDir: Path,
   private val logger: Logger = Logger.Default,
 ) {
 
-  fun run() {
+  /**
+   * @param[stagingMavenRepo] Maven repo directory, in M2 layout.
+   * @param[destinationDir] The output directory with the relocated and updated files.
+   */
+  fun run(
+    stagingMavenRepo: Path,
+    destinationDir: Path,
+  ) {
     logger.debug(
       "Running PrepareGitHubAssetsAction." +
-          "\n  gradleModuleMetadataFile: ${gradleModuleMetadataFile.invariantSeparatorsPathString}" +
-          "\n  destinationDir: $destinationDir"
+          "\n  stagingMavenRepo: ${stagingMavenRepo.invariantSeparatorsPathString}" +
+          "\n  destinationDir: ${destinationDir.invariantSeparatorsPathString}"
     )
 
-    prepareDestinationDir(destinationDir)
+    val allModules = findModuleMetadataFiles(stagingMavenRepo)
 
-    val rootGmm = GradleModuleMetadata.loadFrom(gradleModuleMetadataFile)
-
-    val allModules = getAllGmms(gradleModuleMetadataFile)
-
-    // TODO move check to _after_ files are relocated? Or check both before and after?
-    checkModules(
-      rootGmm = rootGmm,
-      modules = allModules,
-    )
-
-    val relocatedModules =
-      allModules.map { module ->
-        relocateFiles(
-          module = module,
-          destinationDir = destinationDir,
-        )
+    val mapRootModuleToVariants = allModules
+      .filter {
+        it.gmm.component.url == null
+      }
+      .associateWith { rootModule ->
+        allModules.filter { module ->
+          module.gmm.component.url != null &&
+              module.gmm.component.group == rootModule.gmm.component.group &&
+              module.gmm.component.module == rootModule.gmm.component.module &&
+              module.gmm.component.version == rootModule.gmm.component.version
+        }
+          .toList()
       }
 
-    relocatedModules.forEach { module ->
-      updateModuleMetadata(module)
-      createModuleChecksums(module)
+    mapRootModuleToVariants.forEach { (rootModule, variants) ->
+      // TODO move check to _after_ files are relocated? Or check both before and after?
+      checkModules(
+        root = rootModule,
+        variants = variants,
+      )
     }
 
-    createIvyModuleFile(
-      metadata = rootGmm,
-      destinationDir = destinationDir,
-    )
+    val mapRelocatedRootModuleToVariants =
+      mapRootModuleToVariants
+        .mapKeys { (rootModule) ->
+          relocateModule(
+            module = rootModule,
+            destinationDir = destinationDir,
+          )
+        }
+        .mapValues { (_, modules) ->
+          modules.map { module ->
+            relocateModule(
+              module = module,
+              destinationDir = destinationDir,
+            )
+          }
+        }
+
+    mapRelocatedRootModuleToVariants.forEach { (module, variants) ->
+      updateModuleMetadata(module)
+      createModuleChecksums(module)
+      variants.forEach { variant ->
+        updateModuleMetadata(variant)
+        createModuleChecksums(variant)
+      }
+      createIvyModuleFile(
+        metadata = module.gmm,
+        destinationDir = destinationDir,
+      )
+    }
 
     logger.info("outputDir:${destinationDir.invariantSeparatorsPathString}")
-  }
-
-  private fun prepareDestinationDir(destinationDir: Path) {
-    destinationDir.deleteRecursively()
-    destinationDir.createDirectories()
   }
 
   private data class GradleModule(
     val gmmFile: Path,
     val gmm: MutableGradleModuleMetadata,
+  ) {
+
     /**
      * The files attached to the module's variants.
      *
@@ -75,73 +101,39 @@ class PrepareGitHubAssetsAction(
      *
      * Use [Set] because some files might be available in multiple variants.
      */
-    val files: Set<Path>,
-  )
-
-  private fun getAllGmms(
-    rootGmmFile: Path
-  ): List<GradleModule> {
-    val queue = ArrayDeque<Path>()
-    queue.add(rootGmmFile)
-
-    val allGmms = mutableMapOf<Path, MutableGradleModuleMetadata>()
-
-    while (queue.isNotEmpty()) {
-      val gmmFile = queue.removeFirst()
-
-      if (gmmFile in allGmms) continue
-
-      val gmm = MutableGradleModuleMetadata.loadFrom(gmmFile)
-      allGmms[gmmFile] = gmm
-
-//      gmmFile.data.variants.forEach { variant ->
-//        val availableAt = variant.availableAt
-//        if (availableAt != null) {
-//          queue.add(gmmFile.parent.resolve(availableAt.url))
-//        }
-//      }
-    }
-
-    return allGmms.map { (gmmFile, gmm) ->
-
-      val files = gmm.variants.flatMap { variant ->
+    val artifacts: Set<Path> =
+      gmm.variants.flatMap { variant ->
         variant.files.map { file ->
           gmmFile.resolveSibling(file.url)
         }
       }.toSet()
-
-      GradleModule(
-        gmmFile = gmmFile,
-        gmm = gmm,
-        files = files,
-      )
-    }
   }
 
-
   private fun checkModules(
-    rootGmm: GradleModuleMetadata,
-    modules: List<GradleModule>,
+    root: GradleModule,
+    variants: List<GradleModule>,
   ) {
     val errors = mutableListOf<String>()
 
-    val invalidGroups = modules.filter { (_, moduleGmm, _) ->
-      moduleGmm.component.group != rootGmm.component.group
+    val invalidGroups = variants.filter { (_, moduleGmm) ->
+      moduleGmm.component.group != root.gmm.component.group
     }
     if (invalidGroups.isNotEmpty()) {
-      errors.add("The group of all variants must be '${rootGmm.component.group}', but found: $invalidGroups")
+      errors.add("The group of all variants must be '${root.gmm.component.group}', but found: $invalidGroups")
     }
-    val invalidVersions = modules.filter { (_, moduleGmm, _) ->
-      moduleGmm.component.version != rootGmm.component.version
+    val invalidVersions = variants.filter { (_, moduleGmm) ->
+      moduleGmm.component.version != root.gmm.component.version
     }
     if (invalidVersions.isNotEmpty()) {
-      errors.add("The version of all variants must be '${rootGmm.component.version}', but found: $invalidVersions")
+      errors.add("The version of all variants must be '${root.gmm.component.version}', but found: $invalidVersions")
     }
 
-    modules.forEach { (gmmFile, gmm, files) ->
-      val invalidFiles = files.filter { f -> gmmFile.parent != f.parent }
+    variants.forEach { variant ->
+      val invalidFiles = variant.artifacts.filter { f -> variant.gmmFile.parent != f.parent }
       if (invalidFiles.isNotEmpty()) {
-        errors.add("${gmm.component.module} has files in invalid location: ${invalidFiles.map { it.invariantSeparatorsPathString }}")
+        val invalidFilesStrings =
+          invalidFiles.map { it.relativeTo(variant.gmmFile.parent).invariantSeparatorsPathString }
+        errors.add("${variant.gmm.component.module} has artifacts in invalid location: $invalidFilesStrings")
       }
     }
 
@@ -154,47 +146,40 @@ class PrepareGitHubAssetsAction(
    * Relocate publishable files on disk to be in a single directory, [destinationDir],
    * without nesting.
    */
-  private fun relocateFiles(
+  private fun relocateModule(
     module: GradleModule,
     destinationDir: Path,
   ): GradleModule {
     val relocatedGmmFile = module.gmmFile.copyTo(destinationDir.resolve(module.gmmFile.name))
 
-    val relocatedArtifacts = module.files.map { src ->
+    module.artifacts.forEach { src ->
       logger.info("relocating file: $src to ${destinationDir.resolve(src.name)}")
-      src.copyTo(destinationDir.resolve(src.name))
-    }.toSet()
+      src.copyTo(destinationDir.resolve(src.name), overwrite = false)
+    }
 
     return GradleModule(
       gmmFile = relocatedGmmFile,
       gmm = MutableGradleModuleMetadata.loadFrom(relocatedGmmFile),
-      files = relocatedArtifacts,
     )
   }
 
-//  private fun updateRelocatedModule(
-//    module: GradleModule,
-////    destinationDir: Path,
-//  ) {
-//    updateModuleMetadata(module)
-////    createModuleChecksums(moduleFile)
-////    destinationDir.findModuleMetadataFiles().forEach { (moduleFile, metadata) ->
-//////      createIvyModuleFile(moduleFile, metadata)
-////    }
-//  }
-
-//  private fun Path.findModuleMetadataFiles(): Sequence<Pair<Path, MutableGradleModuleMetadata>> =
-//    walk()
-//      .filter { it.isRegularFile() && it.extension == "module" }
-//      .mapNotNull { moduleFile ->
-//        try {
-//          val metadata = MutableGradleModuleMetadata.loadFrom(moduleFile)
-//          moduleFile to metadata
-//        } catch (ex: Exception) {
-//          logger.warn("failed to load moduleFile ${moduleFile.invariantSeparatorsPathString}", ex)
-//          null
-//        }
-//      }
+  private fun findModuleMetadataFiles(
+    stagingMavenRepo: Path
+  ): Sequence<GradleModule> =
+    stagingMavenRepo.walk()
+      .filter { it.isRegularFile() && it.extension == "module" }
+      .mapNotNull { moduleFile ->
+        try {
+          val metadata = MutableGradleModuleMetadata.loadFrom(moduleFile)
+          GradleModule(
+            gmmFile = moduleFile,
+            gmm = metadata,
+          )
+        } catch (ex: Exception) {
+          logger.warn("failed to load moduleFile ${moduleFile.invariantSeparatorsPathString}", ex)
+          null
+        }
+      }
 
   /**
    * Gradle is hardcoded to publish modules to a Maven layout,
@@ -251,7 +236,8 @@ class PrepareGitHubAssetsAction(
         |    <!-- do_not_remove: published-with-gradle-metadata -->
         |    <info organisation="${metadata.component.group}" module="${metadata.component.module}" revision="${metadata.component.version}" />
         |</ivy-module>
-        |""".trimMargin()
+        |""".trimMargin(),
+        options = arrayOf(StandardOpenOption.CREATE_NEW),
       )
   }
 
@@ -259,9 +245,13 @@ class PrepareGitHubAssetsAction(
     setOf(
       "256",
       "512",
-    ).forEach {
-      val checksum = module.gmmFile.computeChecksum("SHA-$it")
-      module.gmmFile.resolveSibling(module.gmmFile.name + ".sha$it").writeText(checksum)
+    ).forEach { bits ->
+      val checksum = module.gmmFile.computeChecksum("SHA-$bits")
+      module.gmmFile.resolveSibling(module.gmmFile.name + ".sha$bits")
+        .writeText(
+          checksum,
+          options = arrayOf(StandardOpenOption.CREATE_NEW),
+        )
     }
   }
 
@@ -273,15 +263,15 @@ class PrepareGitHubAssetsAction(
           ?.substringAfter("$name=")
           ?: error("missing required argument '$name'")
 
-      val gradleModuleMetadataFile = Path(getArg("gradleModuleMetadataFile"))
+      val stagingMavenRepo = Path(getArg("stagingMavenRepo"))
       val destinationDir = Path(getArg("destinationDir"))
 
-      val action = PrepareGitHubAssetsAction(
-        gradleModuleMetadataFile = gradleModuleMetadataFile,
+      val action = PrepareGitHubAssetsAction()
+
+      action.run(
+        stagingMavenRepo = stagingMavenRepo,
         destinationDir = destinationDir,
       )
-
-      action.run()
     }
   }
 }

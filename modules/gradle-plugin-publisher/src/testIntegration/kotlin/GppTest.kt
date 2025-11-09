@@ -84,6 +84,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
+        "--skipUpload",
         "--stacktrace",
       )
       .build()
@@ -106,11 +107,11 @@ class GppTest {
 
     assertLinesMatch(
       listOf(
-        "com.example/test-project/test-project-1.0.0.ivy.xml",
-        "com.example/test-project/test-project-1.0.0.jar",
-        "com.example/test-project/test-project-1.0.0.module",
-        "com.example/test-project/test-project-1.0.0.module.sha256",
-        "com.example/test-project/test-project-1.0.0.module.sha512",
+        "test-project-1.0.0.ivy.xml",
+        "test-project-1.0.0.jar",
+        "test-project-1.0.0.module",
+        "test-project-1.0.0.module.sha256",
+        "test-project-1.0.0.module.sha512",
       ),
       githubReleaseFiles,
     )
@@ -188,7 +189,11 @@ class GppTest {
 
     GradleRunner.create()
       .withProjectDir(projectDir.toFile())
-      .withArguments("uploadGitHubReleaseAssets")
+      .withArguments(
+        "uploadGitHubReleaseAssets",
+        "--skipUpload",
+        "--stacktrace",
+      )
       .build()
 
     val githubReleaseFilesDir = projectDir.resolve("build/tmp/uploadGitHubReleaseAssets/")
@@ -220,30 +225,27 @@ class GppTest {
 //        "com.example/test-project/test-project-linuxx64-1.0.0.module",
 //        "com.example/test-project/test-project-linuxx64-1.0.0.module.sha256",
 //        "com.example/test-project/test-project-linuxx64-1.0.0.module.sha512",
-        "com.example/test-project-js/test-project-1.0.0.ivy.xml",
-        "com.example/test-project-js/test-project-js-1.0.0-sources.jar",
-        "com.example/test-project-js/test-project-js-1.0.0.klib",
-        "com.example/test-project-js/test-project-js-1.0.0.module",
-        "com.example/test-project-js/test-project-js-1.0.0.module.sha256",
-        "com.example/test-project-js/test-project-js-1.0.0.module.sha512",
-        "com.example/test-project-jvm/test-project-1.0.0.ivy.xml",
-        "com.example/test-project-jvm/test-project-jvm-1.0.0-sources.jar",
-        "com.example/test-project-jvm/test-project-jvm-1.0.0.jar",
-        "com.example/test-project-jvm/test-project-jvm-1.0.0.module",
-        "com.example/test-project-jvm/test-project-jvm-1.0.0.module.sha256",
-        "com.example/test-project-jvm/test-project-jvm-1.0.0.module.sha512",
-        "com.example/test-project-linuxx64/test-project-1.0.0.ivy.xml",
-        "com.example/test-project-linuxx64/test-project-linuxx64-1.0.0-sources.jar",
-        "com.example/test-project-linuxx64/test-project-linuxx64-1.0.0.klib",
-        "com.example/test-project-linuxx64/test-project-linuxx64-1.0.0.module",
-        "com.example/test-project-linuxx64/test-project-linuxx64-1.0.0.module.sha256",
-        "com.example/test-project-linuxx64/test-project-linuxx64-1.0.0.module.sha512",
-        "com.example/test-project/test-project-1.0.0-sources.jar",
-        "com.example/test-project/test-project-1.0.0.ivy.xml",
-        "com.example/test-project/test-project-1.0.0.jar",
-        "com.example/test-project/test-project-1.0.0.module",
-        "com.example/test-project/test-project-1.0.0.module.sha256",
-        "com.example/test-project/test-project-1.0.0.module.sha512",
+        "test-project-1.0.0-sources.jar",
+        "test-project-1.0.0.ivy.xml",
+        "test-project-1.0.0.jar",
+        "test-project-1.0.0.module",
+        "test-project-1.0.0.module.sha256",
+        "test-project-1.0.0.module.sha512",
+        "test-project-js-1.0.0-sources.jar",
+        "test-project-js-1.0.0.klib",
+        "test-project-js-1.0.0.module",
+        "test-project-js-1.0.0.module.sha256",
+        "test-project-js-1.0.0.module.sha512",
+        "test-project-jvm-1.0.0-sources.jar",
+        "test-project-jvm-1.0.0.jar",
+        "test-project-jvm-1.0.0.module",
+        "test-project-jvm-1.0.0.module.sha256",
+        "test-project-jvm-1.0.0.module.sha512",
+        "test-project-linuxx64-1.0.0-sources.jar",
+        "test-project-linuxx64-1.0.0.klib",
+        "test-project-linuxx64-1.0.0.module",
+        "test-project-linuxx64-1.0.0.module.sha256",
+        "test-project-linuxx64-1.0.0.module.sha512",
       ),
       githubReleaseFiles,
     )

@@ -4,6 +4,7 @@ package dev.adamko.githubassetpublish
 
 //import dev.adamko.githubassetpublish.internal.PrepareReleaseDependencies
 import dev.adamko.githubassetpublish.internal.UploadReleaseDependencies
+import dev.adamko.githubassetpublish.tasks.PrepareGitHubReleaseFilesTask
 import dev.adamko.githubassetpublish.tasks.UploadGitHubReleaseAssetsTask
 import javax.inject.Inject
 import org.gradle.api.Plugin
@@ -11,7 +12,6 @@ import org.gradle.api.Project
 import org.gradle.api.file.ProjectLayout
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.publish.plugins.PublishingPlugin
@@ -52,43 +52,43 @@ internal constructor(
 
     val buildDirPublishTasks =
       project.tasks
-      .withType<PublishToMavenRepository>()
-      .matching{ task ->
-        task.name.endsWith("PublicationToGitHubAssetPublishStagingRepository")
+        .withType<PublishToMavenRepository>()
+        .matching { task ->
+          task.name.endsWith("PublicationToGitHubAssetPublishStagingRepository")
 
 //        // need to determine the repo lazily because the repo isn't set immediately
 //        val repoIsGapStaging = providers.provider { task.repository?.name == gapExtension.stagingRepoName }.orElse(false)
 //        task.inputs.property("repoIsGapStaging", repoIsGapStaging)
 
-      }
+        }
 
 
     buildDirPublishTasks.configureEach { task ->
       task.dependsOn(cleanBuildDirMavenRepoDir)
     }
 
-    publishing.publications.withType<MavenPublication>().all { publication ->
-      gapExtension.publications.create(publication.name) { spec ->
-        spec.coordinates.convention(providers.provider {
-          publication.run { "$groupId:$artifactId:$version" }
-        })
-      }
-    }
+//    publishing.publications.withType<MavenPublication>().all { publication ->
+//      gapExtension.publications.create(publication.name) { spec ->
+//        spec.coordinates.convention(providers.provider {
+//          publication.run { "$groupId:$artifactId:$version" }
+//        })
+//      }
+//    }
 
-//    val prepareGitHubReleaseFiles by project.tasks.registering(PrepareGitHubReleaseFilesTask::class) {
-//      group = PublishingPlugin.PUBLISH_TASK_GROUP
-//      dependsOn(buildDirPublishTasks)
-//      stagingMavenRepo.convention(gapExtension.stagingDir)
+    val prepareAssetsTask by project.tasks.registering(PrepareGitHubReleaseFilesTask::class) {
+      group = PublishingPlugin.PUBLISH_TASK_GROUP
+      dependsOn(buildDirPublishTasks)
+      stagingMavenRepo.convention(gapExtension.stagingRepoDir)
 //      val destinationDir = layout.buildDirectory.dir("github-release-files")
 //      destinationDirectory.convention(destinationDir)
-//    }
+    }
 
     val uploadGitHubReleaseAssets by project.tasks.registering(UploadGitHubReleaseAssetsTask::class) {
       group = PublishingPlugin.PUBLISH_TASK_GROUP
 
       dependsOn(buildDirPublishTasks)
-      stagingMavenRepo.convention(gapExtension.stagingRepoDir)
-//      releaseDir.convention(prepareGitHubReleaseFiles.flatMap { it.destinationDirectory })
+//      stagingMavenRepo.convention(gapExtension.stagingRepoDir)
+      preparedAssetsDir.convention(prepareAssetsTask.flatMap { it.destinationDirectory })
     }
   }
 
@@ -105,32 +105,22 @@ internal constructor(
     project: Project,
     gapExtension: GitHubAssetPublishExtension,
   ) {
-//    val prepareReleaseDependencies = PrepareReleaseDependencies(project)
-
-//    val publishing = project.extensions.getByType<PublishingExtension>()
-
-//    project.tasks.withType<PrepareGitHubReleaseFilesTask>().configureEach { task ->
-//      task.runtimeClasspath.from(prepareReleaseDependencies.resolver)
-//    }
-
     val uploadReleaseDependencies = UploadReleaseDependencies(project)
 
+    project.tasks.withType<PrepareGitHubReleaseFilesTask>().configureEach { task ->
+      task.runtimeClasspath.from(uploadReleaseDependencies.resolver)
+      task.destinationDirectory.convention(
+        layout.dir(providers.provider { task.temporaryDir })
+      )
+    }
+
     project.tasks.withType<UploadGitHubReleaseAssetsTask>().configureEach { task ->
-//      task.githubRepo.convention(providers.provider {
-//        project.group.toString() + "/" + project.name
-//      })
-//      task.version.convention(providers.provider { project.version.toString() })
       task.createNewReleaseIfMissing.convention(true)
       task.runtimeClasspath.from(uploadReleaseDependencies.resolver)
 
-      task.publications.addAllLater(providers.provider {
-        gapExtension.publications
-      })
+      task.githubRepo.convention(gapExtension.githubRepo)
 
-      task.workDir.convention(layout.dir(providers.provider { task.temporaryDir }))
-//      publishing.publications.withType<MavenPublication>().all { publication ->
-////        publication
-//      }
+      task.skipUpload.convention(false)
     }
   }
 }
