@@ -6,10 +6,7 @@ import org.gradle.api.provider.Property
 
 abstract class GitHubAssetPublishExtension
 @Inject
-internal constructor(
-//  private val objects: ObjectFactory,
-////  private val providers: ProviderFactory,
-) {
+internal constructor() {
 
   /**
    * GitHub repository identifier, e.g. `my-org/my-repo`.
@@ -18,25 +15,6 @@ internal constructor(
 
   internal abstract val gapBuildDir: DirectoryProperty
   internal abstract val stagingRepoDir: DirectoryProperty
-//  internal abstract val assertsDir: DirectoryProperty
 
   val stagingRepoName: String = "GitHubAssetPublishStaging"
-
-//  val publications: NamedDomainObjectContainer<PublicationSpec> =
-//    objects.domainObjectContainer(PublicationSpec::class) { name ->
-//      objects.newPublicationSpec(
-//        name = name,
-////        groupId = providers.provider { }
-////            artifactId = providers.provider { }
-////            version = providers.provider { }
-//      )
-////      objects.newInstance(PublicationSpec::class, it).also { spec ->
-////        spec.enabled.convention(true)
-////      }
-//    }.also { container ->
-//      extensions.add("publications", container)
-//    }
-
-//  private val extensions: ExtensionContainer
-//    get() = (this as ExtensionAware).extensions
 }
