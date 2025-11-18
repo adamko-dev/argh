@@ -15,3 +15,7 @@ internal val devMavenRepo: Path by lazy {
 internal val testMavenLocalDir: Path by lazy {
   Path(System.getProperty("testMavenLocalDir"))
 }
+
+internal val localMavenMirrorPort: Int by lazy {
+  System.getProperty("localMavenMirrorPort").toInt()
+}

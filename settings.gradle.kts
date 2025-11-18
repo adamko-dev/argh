@@ -14,6 +14,12 @@ dependencyResolutionManagement {
   repositories {
     mavenCentral()
     gradlePluginPortal()
+    maven("https://maven.reposilite.com/releases/") {
+      name = "Reposilite Releases"
+      content {
+        includeGroupAndSubgroups("com.reposilite")
+      }
+    }
   }
 }
 

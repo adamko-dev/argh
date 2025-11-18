@@ -1,5 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
+import buildsrc.MavenRepositoryMirrorService
 import buildsrc.tasks.MvnExec
 import org.gradle.internal.extensions.core.serviceOf
 
@@ -8,6 +9,7 @@ plugins {
 //  id("org.gradlex.maven-plugin-development")
   buildsrc.`kotlin-lib`
   buildsrc.`maven-cli-setup`
+  id("buildsrc.MavenRepositoryMirrorPlugin")
 }
 
 // https://github.com/OpenNTF/p2-layout-provider
@@ -75,6 +77,15 @@ testing {
           jvmArgumentProviders.add {
             listOf(
               "-DdevMavenRepo=${devMavenRepo.get().asFile.invariantSeparatorsPath}"
+            )
+          }
+
+          val mavenRepositoryMirrorService = project.mavenRepositoryMirrorService as Provider<MavenRepositoryMirrorService>
+          usesService(mavenRepositoryMirrorService)
+
+          jvmArgumentProviders.add {
+            listOf(
+              "-DlocalMavenMirrorPort=${mavenRepositoryMirrorService.get().launch()}"
             )
           }
         }

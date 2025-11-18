@@ -25,7 +25,7 @@ class MavenRepoPluginTest {
     val result = ProcessBuilder(
       buildList {
         add(mvnBinary.invariantSeparatorsPathString)
-        add("-Dmaven.repo.local=${testMavenLocalDir.invariantSeparatorsPathString}")
+//        add("-Dmaven.repo.local=${testMavenLocalDir.invariantSeparatorsPathString}")
         add("--batch-mode")
         add("--errors")
         add("-X")
@@ -56,7 +56,7 @@ class MavenRepoPluginTest {
     val result = ProcessBuilder(
       buildList {
         add(mvnBinary.invariantSeparatorsPathString)
-        add("-Dmaven.repo.local=${testMavenLocalDir.invariantSeparatorsPathString}")
+//        add("-Dmaven.repo.local=${testMavenLocalDir.invariantSeparatorsPathString}")
         add("--batch-mode")
         add("--errors")
         add("-X")
@@ -179,23 +179,13 @@ private fun pomXml(): String {
     </dependencies>
 
 </project>
-
 """.trimIndent()
-  // <build>
-  //     <plugins>
-  //         <plugin>
-  //             <groupId>adamko-dev.github-asset-publish</groupId>
-  //             <artifactId>maven-plugin-repository</artifactId>
-  //             <version>0.0.1</version>
-  //             <extensions>true</extensions>
-  //         </plugin>
-  //     </plugins>
-  // </build>
 }
 
 @Language("XML")
 private fun settingsXml(): String =
-  """<settings>
+  """
+<settings>
   <profiles>
     <profile>
       <id>dev-maven</id>
@@ -228,5 +218,12 @@ private fun settingsXml(): String =
   <activeProfiles>
     <activeProfile>dev-maven</activeProfile>
   </activeProfiles>
+  <mirrors>
+    <mirror>
+      <id>local-mirror</id>
+      <url>http://localhost:$localMavenMirrorPort/releases/</url>
+      <mirrorOf>external:*</mirrorOf>
+    </mirror>
+  </mirrors>
 </settings>
 """
