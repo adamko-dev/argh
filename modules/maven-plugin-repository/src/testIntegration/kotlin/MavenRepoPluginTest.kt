@@ -2,25 +2,25 @@ package dev.adamko.githubassetpublish.maven
 
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.absolute
-import kotlin.io.path.createDirectories
-import kotlin.io.path.invariantSeparatorsPathString
-import kotlin.io.path.writeText
+import kotlin.io.path.*
 import org.intellij.lang.annotations.Language
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.io.TempDir
 
 class MavenRepoPluginTest {
 
   @Test
   @Disabled
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   fun `testJavaLibraryProject - validate`(
     @TempDir
     projectDir: Path
   ) {
     createProject(projectDir)
+    val logFile = projectDir.resolve("maven_build.log")
 
     val result = ProcessBuilder(
       buildList {
@@ -34,11 +34,13 @@ class MavenRepoPluginTest {
         add("validate")
       }
     )
-//      .inheritIO()
+      .redirectOutput(logFile.toFile())
+      .redirectError(logFile.toFile())
       .directory(projectDir.toFile())
       .start()
 
-    result.waitFor()
+    result.waitFor(1, TimeUnit.MINUTES)
+    println(logFile.readText())
 
     val stdout = result.inputStream.bufferedReader().use { it.readText() }
     println(stdout)
@@ -47,11 +49,13 @@ class MavenRepoPluginTest {
   }
 
   @Test
+  @Timeout(value = 1, unit = TimeUnit.MINUTES)
   fun `testJavaLibraryProject - compile`(
     @TempDir
     projectDir: Path
   ) {
     createProject(projectDir)
+    val logFile = projectDir.resolve("maven_build.log")
 
     val result = ProcessBuilder(
       buildList {
@@ -65,11 +69,16 @@ class MavenRepoPluginTest {
         add("compile")
       }
     )
-//      .inheritIO()
+      .redirectOutput(logFile.toFile())
+      .redirectError(logFile.toFile())
       .directory(projectDir.toFile())
+      .apply {
+        environment()["JAVA_HOME"] = System.getProperty("java.home")
+      }
       .start()
 
     result.waitFor(1, TimeUnit.MINUTES)
+    println(logFile.readText())
 
     val stdout = result.inputStream.bufferedReader().use { it.readText() }
     println(stdout)
@@ -154,8 +163,8 @@ private fun pomXml(): String {
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>

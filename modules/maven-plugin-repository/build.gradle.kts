@@ -1,6 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-import buildsrc.MavenRepositoryMirrorService
 import buildsrc.tasks.MvnExec
 import org.gradle.internal.extensions.core.serviceOf
 
@@ -80,7 +79,7 @@ testing {
             )
           }
 
-          val mavenRepositoryMirrorService = project.mavenRepositoryMirrorService as Provider<MavenRepositoryMirrorService>
+          val mavenRepositoryMirrorService = project.mavenRepositoryMirror.serviceProvider
           usesService(mavenRepositoryMirrorService)
 
           jvmArgumentProviders.add {
@@ -88,6 +87,8 @@ testing {
               "-DlocalMavenMirrorPort=${mavenRepositoryMirrorService.get().launch()}"
             )
           }
+
+          javaLauncher.set(javaToolchains.launcherFor { languageVersion.set(JavaLanguageVersion.of(21)) })
         }
       }
     }

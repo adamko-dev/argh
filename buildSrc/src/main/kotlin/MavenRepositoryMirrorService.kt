@@ -1,5 +1,6 @@
 package buildsrc
 
+import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.URI
 import java.net.http.HttpClient
@@ -58,20 +59,16 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
       start = false,
     ) {
       execOps.javaexec {
-//        mainClass.set("com.reposilite.ReposiliteLauncherKt")
         classpath = parameters.reposiliteJar
         workingDir(reposiliteDir.toFile())
         args = listOf(
-//          "--working-directory=${reposoliteDir.resolve("data").invariantSeparatorsPathString}",
           "--port=$port",
           "--hostname=127.0.0.1",
           "--no-color",
           "--token", "admin:secret",
-//          "--local-config=./build/reposilite/config.local.cdn",
-//          "--plugin-directory=./build/reposilite/plugins",
         )
-        standardOutput = System.out
-        errorOutput = System.err
+        standardOutput = OutputStream.nullOutputStream()
+        errorOutput = OutputStream.nullOutputStream()
         maxHeapSize = "32m"
       }
     }
@@ -89,10 +86,6 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     Thread.sleep(5000)
 
     updateMirrors()
-
-
-//    Thread.sleep(Int.MAX_VALUE.toLong())
-
 
     return port
   }
@@ -141,7 +134,6 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     }
 
     println("Updated mirrors: ${response.body()}")
-
   }
 
   override fun close() {
@@ -166,8 +158,7 @@ internal constructor(
       parameters.reposiliteDir.set(layout.buildDirectory.dir("reposilite"))
     }
 
-
-    project.extensions.add("mavenRepositoryMirrorService", serviceProvider)
+    project.extensions.create("mavenRepositoryMirror", MavenRepositoryMirrorExtension::class, serviceProvider)
   }
 
   private fun reposiliteJarResolver(project: Project): NamedDomainObjectProvider<ResolvableConfiguration> {
@@ -189,6 +180,12 @@ internal constructor(
   }
 
 }
+
+abstract class MavenRepositoryMirrorExtension
+internal constructor(
+  val serviceProvider: Provider<MavenRepositoryMirrorService>,
+)
+
 
 //
 ///*
