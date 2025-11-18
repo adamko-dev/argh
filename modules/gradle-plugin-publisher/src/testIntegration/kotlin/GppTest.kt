@@ -53,7 +53,7 @@ class GppTest {
       |  `maven-publish`
       |}
       |
-      |group = "com.example"
+      |group = "aSemy.demo-github-asset-publish-repo"
       |version = "1.0.0"
       |
       |publishing {
@@ -84,7 +84,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        "--skipUpload",
+        "--skipGitHubUpload",
         "--stacktrace",
       )
       .build()
@@ -161,7 +161,7 @@ class GppTest {
       |  `maven-publish`
       |}
       |
-      |group = "com.example"
+      |group = "aSemy.demo-github-asset-publish-repo"
       |version = "1.0.0"
       |
       |kotlin {
@@ -191,7 +191,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        "--skipUpload",
+        "--skipGitHubUpload",
         "--stacktrace",
       )
       .build()
@@ -243,7 +243,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        "--skipUpload", // TODO re-enable
+//        "--skipGitHubUpload",
         "--stacktrace",
       )
       .build()

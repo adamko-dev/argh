@@ -36,8 +36,11 @@ internal constructor(
   abstract val preparedAssetsDir: DirectoryProperty
 
   @get:Input
-  @get:Option(option = "skipUpload", description = "Skip uploading to GitHub, just prepares the files.")
-  abstract val skipUpload: Property<Boolean>
+  @get:Option(option = "skipGitHubUpload", description = "Skip uploading to GitHub, just prepares the files.")
+  abstract val skipGitHubUpload: Property<Boolean>
+
+  @get:Input
+  abstract val releaseVersion: Property<String>
 
   @TaskAction
   protected fun taskAction() {
@@ -52,12 +55,15 @@ internal constructor(
     // - check if gh cli is authenticated
     // - check if gh cli has access to GitHub repo
     // - check the release version is valid and consistent
+    //   across all GMM module files
+    // - check the release group is valid and consistent
+    //   across all GMM module files
     // - check if repo already has release
     // - check if preparedFiles does not contain subdirectories
   }
 
   private fun upload() {
-    if (skipUpload.get()) {
+    if (skipGitHubUpload.get()) {
       logger.lifecycle("$path skipping upload")
       return
     }
@@ -67,7 +73,7 @@ internal constructor(
       spec.args(
         buildList {
           add("githubRepo=${githubRepo.get()}")
-//          add("releaseVersion=${version.get()}")
+          add("releaseVersion=${releaseVersion.get()}")
           add("createNewReleaseIfMissing=${createNewReleaseIfMissing.get()}")
           add("releaseDir=${preparedAssetsDir.get().asFile.invariantSeparatorsPath}")
         }

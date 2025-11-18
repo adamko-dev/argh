@@ -34,6 +34,7 @@ kotlin {
 
 tasks.withType<JavaCompile>().configureEach {
   targetCompatibility = kotlin.compilerOptions.jvmTarget.get().target
+  sourceCompatibility = kotlin.compilerOptions.jvmTarget.get().target
 }
 
 testing.suites.withType<JvmTestSuite>().configureEach {

@@ -1,0 +1,2 @@
+dev.adamko.githubassetpublish.maven.connector.GhaRepositoryConnectorFactory
+dev.adamko.githubassetpublish.maven.layout.GitHubAssetsRepositoryLayoutFactory

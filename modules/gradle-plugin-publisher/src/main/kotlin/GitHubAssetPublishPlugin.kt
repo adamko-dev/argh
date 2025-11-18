@@ -91,7 +91,8 @@ internal constructor(
       task.createNewReleaseIfMissing.convention(true)
       task.runtimeClasspath.from(uploadReleaseDependencies.resolver)
       task.githubRepo.convention(gapExtension.githubRepo)
-      task.skipUpload.convention(false)
+      task.skipGitHubUpload.convention(false)
+      task.releaseVersion.convention(providers.provider { project.version.toString() })
     }
   }
 }

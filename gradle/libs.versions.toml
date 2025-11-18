@@ -2,8 +2,12 @@
 
 kotlinx-serialization = "1.9.0"
 
+apacheMaven-core = "3.9.11"
+apacheMaven-pluginTools = "3.15.2"
+
 [libraries]
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+
 
 [plugins]
