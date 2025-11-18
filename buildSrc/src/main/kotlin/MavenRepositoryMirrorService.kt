@@ -9,7 +9,10 @@ import java.net.http.HttpResponse
 import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.concurrent.thread
+import kotlin.io.encoding.Base64
 import kotlin.io.path.createDirectories
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -41,6 +44,9 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     val reposiliteDir: DirectoryProperty
   }
 
+  private val credentials = "admin:secret"
+  private val credentialsEncoded = Base64.encode(credentials.encodeToByteArray())
+
   private val reposiliteDir: Path by lazy {
     parameters.reposiliteDir.get().asFile.toPath()
       .createDirectories()
@@ -65,7 +71,7 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
           "--port=$port",
           "--hostname=127.0.0.1",
           "--no-color",
-          "--token", "admin:secret",
+          "--token", credentials,
         )
         standardOutput = OutputStream.nullOutputStream()
         errorOutput = OutputStream.nullOutputStream()
@@ -83,17 +89,46 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     thread.start()
     println("Launching maven repository mirror at http://localhost:$port/")
 
-    Thread.sleep(5000)
+    waitUntilServerUp()
 
     updateMirrors()
 
     return port
   }
 
+  private fun waitUntilServerUp() {
+    val timeMark = TimeSource.Monotonic.markNow()
+    val client = HttpClient.newHttpClient()
+    val request = HttpRequest
+      .newBuilder(URI("http://localhost:$port/api/status/instance"))
+      .header("Authorization", "xBasic $credentialsEncoded")
+      .GET()
+      .build()
+    while (true) {
+      if (timeMark.elapsedNow() > 10.0.seconds) {
+        error("Reposilite server didn't start in 10 seconds")
+      }
+      val response = try {
+        client.send(
+          request,
+          HttpResponse.BodyHandlers.ofString(),
+        )
+      } catch (_: Exception) {
+        null
+      }
+      if (response?.statusCode() == 200) {
+        return
+      } else {
+        println("Waiting for reposilite server to start ... ${response?.run { "${statusCode()} - ${body()}" }}")
+      }
+      Thread.sleep(1000)
+    }
+  }
+
   private fun updateMirrors() {
 
     val request = HttpRequest.newBuilder(URI("http://localhost:$port/api/settings/domain/maven"))
-      .header("Authorization", "xBasic YWRtaW46c2VjcmV0")
+      .header("Authorization", "xBasic $credentialsEncoded")
       .PUT(
         HttpRequest.BodyPublishers.ofString(
           """
@@ -108,7 +143,20 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
                   "type": "fs",
                   "quota": "100%",
                   "mount": "",
-                  "maxResourceLockLifetimeInSeconds": 60
+                  "maxResourceLockLifetimeInSeconds": 60,
+                  "allowedExtensions": [
+                    ".klib",
+                    ".jar",
+                    ".war",
+                    ".pom",
+                    ".xml",
+                    ".module",
+                    ".md5",
+                    ".sha1",
+                    ".sha256",
+                    ".sha512",
+                    ".asc"
+                  ]
                 },
                 "storagePolicy": "PRIORITIZE_UPSTREAM_METADATA",
                 "metadataMaxAge": 0,
