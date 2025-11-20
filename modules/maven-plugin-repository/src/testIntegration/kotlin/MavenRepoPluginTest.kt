@@ -25,7 +25,6 @@ class MavenRepoPluginTest {
     val result = ProcessBuilder(
       buildList {
         add(mvnBinary.invariantSeparatorsPathString)
-//        add("-Dmaven.repo.local=${testMavenLocalDir.invariantSeparatorsPathString}")
         add("--batch-mode")
         add("--errors")
         add("-X")
@@ -60,7 +59,6 @@ class MavenRepoPluginTest {
     val result = ProcessBuilder(
       buildList {
         add(mvnBinary.invariantSeparatorsPathString)
-//        add("-Dmaven.repo.local=${testMavenLocalDir.invariantSeparatorsPathString}")
         add("--batch-mode")
         add("--errors")
         add("-X")
@@ -88,8 +86,6 @@ class MavenRepoPluginTest {
 }
 
 private fun createProject(projectDir: Path) {
-
-//    val mvnLocalDir = prepareTestMavenLocal(projectDir.resolve("mvn-local"))
 
   projectDir.resolve("pom.xml")
     .writeText(pomXml())
@@ -138,19 +134,6 @@ private fun createProject(projectDir: Path) {
   }
 }
 
-
-//private fun prepareTestMavenLocal(
-//  destinationDir: Path,
-//): Path {
-//  destinationDir.deleteRecursively()
-//  destinationDir.createDirectories()
-//  devMavenRepo.copyToRecursively(
-//    destinationDir,
-//    overwrite = false,
-//    followLinks = false,
-//  )
-//  return destinationDir
-//}
 
 @Language("XML")
 private fun pomXml(): String {
