@@ -35,8 +35,6 @@ internal class GhaRepositoryConnector(
   private val client: HttpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
-//    .followRedirects()
-//    .newHttpClient()
 
 
   init {
@@ -212,72 +210,8 @@ internal class GhaRepositoryConnector(
       }
     }
 
-
-//    val expectedFileName = response.headers().firstValue("Content-Disposition").getOrNull()
-
-//    val tempFile =
-//      if (expectedFileName != null) {
-//        tempDestDir.resolve("expectedFileName")
-//      } else {
-//        tempDestDir.listDirectoryEntries()
-//          .single()
-//      }
-
     tempDownloadFile.moveTo(dest, StandardCopyOption.REPLACE_EXISTING)
 
     logger.warn("downloaded $resourcePath to ${dest.toUri()}")
   }
 }
-
-//
-////@Throws(FileNotFoundException::class, IOException::class)
-//private fun download(source: URI, dest: Path) {
-//
-//
-//  val isOpt: Optional<InputStream?> = P2Util.openConnection(source)
-//  if (!isOpt.isPresent()) {
-//    throw FileNotFoundException()
-//  }
-//  isOpt.get().use { `is` ->
-//    Files.createDirectories(dest.getParent())
-//    Files.copy(`is`, dest, StandardCopyOption.REPLACE_EXISTING)
-//  }
-//}
-
-//
-//object FileDownloader {
-//  @JvmStatic
-//  fun main(args: Array<String>) {
-//    val baseUrl = "http://localhost:8000"
-//
-//    val noteName = "welcome.txt"
-//    try {
-//      // Create HttpClient
-//      val client = HttpClient.newHttpClient()
-//
-//
-//      // Build GET Request
-//      val request = HttpRequest.newBuilder()
-//        .uri(URI.create(baseUrl + "/notes/" + noteName))
-//        .build()
-//
-//      // Send Request and capture response
-//      val response = client.send(request, HttpResponse.BodyHandlers.ofByteArray())
-//
-//      // Check if request was successful
-//      if (response.statusCode() == 200) {
-//        // Save file locally
-//
-//        val filePath = Paths.get("downloaded_" + noteName)
-//
-//        Files.write(filePath, response.body())
-//      } else {
-//        println("HTTP error occurred: " + response.statusCode())
-//      }
-//    } catch (e: IOException) {
-//      println("An error occurred: " + e.message)
-//    } catch (e: InterruptedException) {
-//      println("An error occurred: " + e.message)
-//    }
-//  }
-//}

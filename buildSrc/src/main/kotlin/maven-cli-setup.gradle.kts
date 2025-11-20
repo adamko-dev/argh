@@ -17,28 +17,6 @@ plugins {
   base
 }
 
-abstract class MavenCliSetupExtension {
-  abstract val mavenVersion: Property<String>
-  abstract val mavenPluginToolsVersion: Property<String>
-
-  /** Directory that will contain the unpacked Apache Maven dependency */
-  abstract val mavenInstallDir: DirectoryProperty
-
-  /**
-   * Path to the Maven executable.
-   *
-   * This should be different per OS:
-   *
-   * * Windows: `$mavenInstallDir/bin/mvn.cmd`
-   * * Unix: `$mavenInstallDir/bin/mvn`
-   */
-  abstract val mvn: RegularFileProperty
-
-  companion object {
-    const val MAVEN_PLUGIN_TASK_GROUP = "maven plugin"
-  }
-}
-
 val mavenCliSetupExtension =
   extensions.create("mavenCliSetup", MavenCliSetupExtension::class).apply {
 //    mavenVersion.convention(libs.versions.apacheMaven.core)

@@ -4,10 +4,22 @@ kotlinx-serialization = "1.9.0"
 
 apacheMaven-core = "3.9.11"
 apacheMaven-pluginTools = "3.15.2"
+apacheMaven-resolverSpi = "1.9.18"
+
+slf4j = "2.0.17"
 
 [libraries]
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
+apacheMaven-pluginApi = { module = "org.apache.maven:maven-plugin-api", version.ref = "apacheMaven-core" }
+apacheMaven-core = { module = "org.apache.maven:maven-core", version.ref = "apacheMaven-core" }
+apacheMaven-resolverSpi = { module = "org.apache.maven.resolver:maven-resolver-spi" }
+apacheMaven-pluginAnnotations = { module = "org.apache.maven.plugin-tools:maven-plugin-annotations", version.ref = "apacheMaven-pluginTools" }
+
+apacheMaven-model = { module = "org.apache.maven:maven-model", version.ref = "apacheMaven-core" }
+apacheMaven-modelBuilder = { module = "org.apache.maven:maven-model-builder", version.ref = "apacheMaven-core" }
+
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 
 [plugins]

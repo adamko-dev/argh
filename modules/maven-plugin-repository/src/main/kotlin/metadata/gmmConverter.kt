@@ -49,7 +49,7 @@ private fun toPomXml(metadata: GradleModuleMetadata): String {
 
 /**
  * Heuristically select a Java runtime variant:
- * - Prefer org.gradle.usage=java-runtime
+ * - Prefer `org.gradle.usage=java-runtime`
  * - Otherwise fall back to the first variant, if any.
  */
 private fun selectJavaRuntimeVariant(

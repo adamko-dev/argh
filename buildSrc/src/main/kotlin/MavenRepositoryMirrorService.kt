@@ -189,46 +189,6 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
   }
 }
 
-
-abstract class MavenRepositoryMirrorPlugin
-@Inject
-internal constructor(
-  private val layout: ProjectLayout,
-) : Plugin<Project> {
-
-  override fun apply(project: Project) {
-
-    val serviceProvider: Provider<MavenRepositoryMirrorService> = project.gradle.sharedServices.registerIfAbsent(
-      "mavenRepositoryMirrorService_${project.path}",
-      MavenRepositoryMirrorService::class
-    ) {
-      parameters.reposiliteJar.from(reposiliteJarResolver(project))
-      parameters.reposiliteDir.set(layout.buildDirectory.dir("reposilite"))
-    }
-
-    project.extensions.create("mavenRepositoryMirror", MavenRepositoryMirrorExtension::class, serviceProvider)
-  }
-
-  private fun reposiliteJarResolver(project: Project): NamedDomainObjectProvider<ResolvableConfiguration> {
-    val dependencyScope = project.configurations.dependencyScope("reposiliteClasspath") {
-      defaultDependencies {
-        add(project.dependencies.create("com.reposilite:reposilite:3.5.26"))
-      }
-    }
-
-    return project.configurations.resolvable(dependencyScope.name + "Resolver") {
-      extendsFrom(dependencyScope.get())
-      attributes {
-        attribute(CATEGORY_ATTRIBUTE, project.objects.named(LIBRARY))
-        attribute(BUNDLING_ATTRIBUTE, project.objects.named(SHADOWED))
-        attribute(LIBRARY_ELEMENTS_ATTRIBUTE, project.objects.named(JAR))
-        attribute(USAGE_ATTRIBUTE, project.objects.named(JAVA_RUNTIME))
-      }
-    }
-  }
-
-}
-
 abstract class MavenRepositoryMirrorExtension
 internal constructor(
   val serviceProvider: Provider<MavenRepositoryMirrorService>,
