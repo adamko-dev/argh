@@ -2,6 +2,12 @@ package dev.adamko.githubassetpublish.maven.metadata
 
 import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
 
+import java.io.StringWriter
+import org.apache.maven.model.Dependency
+import org.apache.maven.model.Exclusion
+import org.apache.maven.model.Model
+import org.apache.maven.model.io.xpp3.MavenXpp3Writer
+
 /**
  * Convert a Gradle Module Metadata file into a basic Maven POM XML string.
  *
@@ -19,31 +25,32 @@ internal fun GradleModuleMetadata.convertToPomXml(): String {
 private fun toPomXml(metadata: GradleModuleMetadata): String {
   val component = metadata.component
   val variant = selectJavaRuntimeVariant(metadata)
-  val dependenciesXml = buildDependenciesXml(variant)
 
-  return buildString {
-    appendLine("""<?xml version="1.0" encoding="UTF-8"?>""")
-    appendLine("""<project xmlns="http://maven.apache.org/POM/4.0.0"""")
-    appendLine("""         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"""")
-    appendLine("""         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 """)
-    appendLine("""         http://maven.apache.org/xsd/maven-4.0.0.xsd">""")
-    appendLine("  <modelVersion>4.0.0</modelVersion>")
-    appendLine("  <groupId>${component.group}</groupId>")
-    appendLine("  <artifactId>${component.module}</artifactId>")
-    appendLine("  <version>${component.version}</version>")
-    appendLine("  <packaging>jar</packaging>")
+  val model = createModel(component)
 
-    // A minimal <name> can be helpful but is optional.
-//    appendLine("  <name>${xmlEscape(component.group + ":" + component.module)}</name>")
-
-    if (dependenciesXml.isNotEmpty()) {
-      appendLine("  <dependencies>")
-      append(dependenciesXml)
-      appendLine("  </dependencies>")
-    }
-
-    appendLine("</project>")
+  if (variant != null) {
+    addDependencies(model, variant)
   }
+
+  StringWriter().use { sink ->
+    MavenXpp3Writer().write(sink, model)
+    return sink.toString()
+  }
+}
+
+private fun createModel(
+  component: GradleModuleMetadata.Component,
+): Model = Model().apply {
+  modelVersion = "4.0.0"
+  groupId = component.group
+  artifactId = component.module
+  version = component.version
+
+  // TODO 'pom' packaging if no variants have files?
+  packaging = "jar"
+
+  // A minimal <name> can be helpful but is optional.
+  name = "${component.group}:${component.module}"
 }
 
 
@@ -78,54 +85,48 @@ private fun selectJavaRuntimeVariant(
   return null
 }
 
-private fun buildDependenciesXml(
-  variant: GradleModuleMetadata.Variant?
-): String {
-  if (variant == null) return ""
+private fun addDependencies(
+  model: Model,
+  variant: GradleModuleMetadata.Variant,
+) {
+  val availableAt = variant.availableAt
 
-  return buildString {
-    val availableAt = variant.availableAt
+  if (availableAt != null) {
+    val dep = Dependency()
+    dep.groupId = availableAt.group
+    dep.artifactId = availableAt.module
+    dep.version = availableAt.version
+    model.addDependency(dep)
+  }
 
-    if (availableAt != null) {
-      appendLine("    <dependency>")
-      appendLine("      <groupId>${availableAt.group}</groupId>")
-      appendLine("      <artifactId>${availableAt.module}</artifactId>")
-      appendLine("      <version>${availableAt.version}</version>")
-      appendLine("    </dependency>")
+  for (depData in variant.dependencies) {
+    val version = depData.version?.run {
+      // Gradle metadata may have several version fields: pick the closest to Maven's idea
+      strictly ?: requires ?: prefers
     }
 
-    for (dep in variant.dependencies) {
+    val dep = Dependency()
+    dep.groupId = depData.group
+    dep.artifactId = depData.module
 
-      val version = dep.version?.let { vc ->
-        // Gradle metadata may have several version fields; pick the closest to Maven's idea.
-        vc.strictly ?: vc.requires ?: vc.prefers
-      }
-
-      appendLine("    <dependency>")
-      appendLine("      <groupId>${dep.group}</groupId>")
-      appendLine("      <artifactId>${dep.module}</artifactId>")
-
-      if (version != null && version.isNotBlank()) {
-        appendLine("      <version>${version}</version>")
-      }
-
-      // Assume a Java consumer using the runtime view; use 'compile' as a safe default scope.
-      // (You can refine this later by inspecting attributes or variants.)
-      appendLine("      <scope>compile</scope>")
-
-      // Exclusions
-      if (dep.excludes.isNotEmpty()) {
-        appendLine("      <exclusions>")
-        for (exclude in dep.excludes) {
-          appendLine("        <exclusion>")
-          appendLine("          <groupId>${exclude.group}</groupId>")
-          appendLine("          <artifactId>${exclude.module}</artifactId>")
-          appendLine("        </exclusion>")
-        }
-        appendLine("      </exclusions>")
-      }
-
-      appendLine("    </dependency>")
+    if (version != null && version.isNotBlank()) {
+      dep.version = version
     }
+
+    // assume a Java consumer using the runtime view, use 'compile' as a safe default scope
+    // TODO determine scope by inspecting attributes or variants
+    dep.scope = "compile"
+
+    // Exclusions
+    if (depData.excludes.isNotEmpty()) {
+      for (excludeData in depData.excludes) {
+        val exclusion = Exclusion()
+        exclusion.groupId = excludeData.group
+        exclusion.artifactId = excludeData.module
+        dep.addExclusion(exclusion)
+      }
+    }
+
+    model.addDependency(dep)
   }
 }

@@ -21,10 +21,6 @@ constructor(
 ) : RepositoryConnectorFactory {
   private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-  init {
-    logger.warn("new GhaRepositoryConnectorFactory")
-  }
-
   override fun newInstance(
     session: RepositorySystemSession,
     repository: RemoteRepository,
@@ -36,8 +32,8 @@ constructor(
     return GhaRepositoryConnector(
       session,
       repository,
+      checksumAlgorithmFactorySelector,
     )
-//    return GhaRepositoryConnector(session, repository, logger, checksumAlgorithmFactorySelector)
   }
 
   override fun getPriority(): Float = 1f

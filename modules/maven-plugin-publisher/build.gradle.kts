@@ -10,19 +10,18 @@ dependencies {
 
   implementation(libs.apacheMaven.pluginApi)
   implementation(libs.apacheMaven.core)
-  //implementation(libs.apacheMaven.resolverSpi)
   compileOnly(libs.apacheMaven.pluginAnnotations)
 
   implementation(libs.apacheMaven.model)
   implementation(libs.apacheMaven.modelBuilder)
 
-//  implementation("org.apache.maven:maven-plugin-api:${libs.versions.apacheMaven.core.get()}")
-//  implementation("org.apache.maven:maven-core:${libs.versions.apacheMaven.core.get()}")
-//  compileOnly("org.apache.maven.plugin-tools:maven-plugin-annotations:${libs.versions.apacheMaven.pluginTools.get()}")
-
   compileOnly(libs.slf4j.api)
 }
 
+mavenCliSetup {
+  mavenVersion.set(libs.versions.apacheMaven.core)
+  mavenPluginToolsVersion.set(libs.versions.apacheMaven.pluginTools)
+}
 
 tasks.withType<Test>().configureEach {
   dependsOn(tasks.installMavenBinary)

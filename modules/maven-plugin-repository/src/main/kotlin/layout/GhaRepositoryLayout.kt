@@ -11,23 +11,27 @@ import org.eclipse.aether.spi.connector.layout.RepositoryLayout.ChecksumLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-  class GhaRepositoryLayout(
-  private val id: String,
+class GhaRepositoryLayout(
+//  private val id: String,
 //  url: String,
-//  checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
+  private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
 ) : RepositoryLayout, Closeable {
   private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-    init {
-        logger.warn("new GhaRepositoryLayout($id)")
-    }
-
   override fun getChecksumAlgorithmFactories(): List<ChecksumAlgorithmFactory> {
+    checksumAlgorithmFactorySelector.selectList(
+      listOf(
+        "SHA-512",
+        "SHA-256",
+        //"SHA-1",
+        //"MD5",
+      )
+    )
     return emptyList()
   }
 
   override fun hasChecksums(artifact: Artifact): Boolean {
-    return false
+    return true
   }
 
   override fun getLocation(artifact: Artifact, upload: Boolean): URI {
@@ -73,6 +77,9 @@ import org.slf4j.LoggerFactory
     upload: Boolean,
     location: URI
   ): List<ChecksumLocation> {
+//    if (artifact.extension == "pom") {
+//
+//    }
     return emptyList()
   }
 
@@ -82,16 +89,22 @@ import org.slf4j.LoggerFactory
     location: URI
   ): List<ChecksumLocation> {
     return emptyList()
+//
+//
+//    metadata.type
+//
+//    ChecksumLocation(
+//      location = TODO(),
+//      checksumAlgorithmFactory = TODO(),
+//    )
   }
 
   override fun close() {
   }
 }
 
-// https://github.com/aSemy/demo-github-asset-publish-repo/releases/download/1.0.0/test-project-1.0.0-sources.jar
 private fun releaseAssetUri(
   groupId: String,
-//  artifactId : String,
   version: String,
   file: String,
 ): URI {
@@ -100,14 +113,6 @@ private fun releaseAssetUri(
     append("/releases/download/")
     append(version)
     append("/")
-//    append( artifactId)
-//    append("-")
-//    append(version)
-//        metadata.classifier.ifEmpty { null }?.let {
-//          append("-")
-//          append(it)
-//        }
-//        append(".")
     append(file)
   })
 }

@@ -40,3 +40,7 @@ tasks.withType<JavaCompile>().configureEach {
 testing.suites.withType<JvmTestSuite>().configureEach {
   useJUnitJupiter("6.0.1")
 }
+
+sourceSets.configureEach {
+  java.setSrcDirs(emptyList<String>())
+}

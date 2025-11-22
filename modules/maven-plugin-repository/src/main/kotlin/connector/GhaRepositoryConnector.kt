@@ -3,6 +3,7 @@ package dev.adamko.githubassetpublish.maven.connector
 import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
 import dev.adamko.githubassetpublish.maven.layout.GhaRepositoryLayout
 import dev.adamko.githubassetpublish.maven.metadata.convertToPomXml
+import dev.adamko.githubassetpublish.maven.modify
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.URI
@@ -15,6 +16,7 @@ import kotlin.io.path.*
 import org.eclipse.aether.RepositorySystemSession
 import org.eclipse.aether.repository.RemoteRepository
 import org.eclipse.aether.spi.connector.*
+import org.eclipse.aether.spi.connector.checksum.ChecksumAlgorithmFactorySelector
 import org.eclipse.aether.spi.connector.layout.RepositoryLayout
 import org.eclipse.aether.transfer.ArtifactNotFoundException
 import org.eclipse.aether.transfer.ArtifactTransferException
@@ -23,25 +25,21 @@ import org.eclipse.aether.transfer.TransferResource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-
 internal class GhaRepositoryConnector(
   private val session: RepositorySystemSession,
   private val repository: RemoteRepository,
+  private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
 ) : RepositoryConnector {
   private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-  private val layout: RepositoryLayout = GhaRepositoryLayout("gh-assets")
+  private val layout: RepositoryLayout = GhaRepositoryLayout(
+//    "gh-assets"
+    checksumAlgorithmFactorySelector = checksumAlgorithmFactorySelector,
+  )
 
   private val client: HttpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .build()
-
-
-  init {
-    logger.warn("new GhaRepositoryConnector")
-
-    client.followRedirects()
-  }
 
   override fun get(
     artifactDownloads: Collection<ArtifactDownload>?,
@@ -74,6 +72,39 @@ internal class GhaRepositoryConnector(
   }
 
   private fun downloadPom(download: ArtifactDownload) {
+
+    val pomDest = download.file.toPath()
+    val moduleDest: Path =
+      pomDest.resolveSibling(pomDest.name.removeSuffix(".pom") + ".module")
+
+    val moduleUri = layout.getLocation(download.artifact, false)
+      .toString()
+      .removeSuffix(".pom")
+      .plus(".module")
+      .let(::URI)
+
+    downloadGradleMetadata(
+      download = download,
+      moduleUri = moduleUri,
+      moduleDest = moduleDest,
+    )
+
+    validateGradleMetadataChecksum(
+      module = moduleDest,
+      moduleUri = moduleUri,
+    )
+
+    convertGradleMetadataToPom(
+      pom = pomDest,
+      module = moduleDest,
+    )
+  }
+
+  private fun downloadGradleMetadata(
+    download: ArtifactDownload,
+    moduleUri: URI,
+    moduleDest: Path,
+  ) {
     val transferEvent = TransferEvent.Builder(
       session,
       TransferResource(
@@ -85,29 +116,12 @@ internal class GhaRepositoryConnector(
       )
     ).build()
 
-//    val modulePath = createTempFile("module", ".tmp")
-
     download.listener.transferInitiated(transferEvent)
-
-    val pomDest = download.file.toPath()
-    val moduleDest: Path =
-      pomDest.resolveSibling(pomDest.name.removeSuffix(".pom") + ".module")
-
-    val sourceUri = layout.getLocation(download.artifact, false)
-      .toString()
-      .removeSuffix(".pom")
-      .plus(".module")
-      .let(::URI)
 
     try {
       download.listener.transferStarted(transferEvent)
 
-      download(sourceUri, moduleDest)
-
-      val gmm = GradleModuleMetadata.loadFrom(moduleDest)
-
-//      gmm.convertToPomXml()
-      pomDest.writeText(gmm.convertToPomXml())
+      download(moduleUri, moduleDest)
 
       download.listener.transferSucceeded(transferEvent)
     } catch (e: Exception) {
@@ -117,10 +131,41 @@ internal class GhaRepositoryConnector(
           download.artifact,
           repository,
           "Error transferring artifact",
-          e
+          e,
         )
       )
     }
+  }
+
+  private fun validateGradleMetadataChecksum(
+    module: Path,
+    moduleUri: URI,
+  ) {
+    val sha512 = downloadGradleMetadataChecksum(module, moduleUri, "sha512")
+    val sha256 = downloadGradleMetadataChecksum(module, moduleUri, "sha256")
+
+
+  }
+
+  private fun downloadGradleMetadataChecksum(
+    module: Path,
+    moduleUri: URI,
+    checksum: String,
+  ): String {
+    val checksumUri = moduleUri.modify {
+      path = "$path.$checksum"
+    }
+    val checksumFile = module.resolveSibling(module.name + ".$checksum")
+    download(checksumUri, checksumFile)
+    return checksumFile.readText().trim()
+  }
+
+  private fun convertGradleMetadataToPom(
+    pom: Path,
+    module: Path
+  ) {
+    val gmm = GradleModuleMetadata.loadFrom(module)
+    pom.writeText(gmm.convertToPomXml())
   }
 
   private fun downloadArtifact(download: ArtifactDownload) {
@@ -189,7 +234,6 @@ internal class GhaRepositoryConnector(
   private fun download(resourcePath: URI, dest: Path) {
     val request = HttpRequest.newBuilder()
       .uri(URI(repository.url).resolve(resourcePath.toString()))
-//      .setRedirectHandler(  DefaultRedirectHandler())
       .build()
 
     val tempDownloadFile = createTempFile("gha-download-${dest.name}", ".tmp")
@@ -202,7 +246,6 @@ internal class GhaRepositoryConnector(
     if (response.statusCode() != 200) {
       throw IOException("HTTP error occurred: " + response.statusCode())
     }
-
 
     response.body().use { source ->
       tempDownloadFile.outputStream().use { sink ->

@@ -1,10 +1,10 @@
 package dev.adamko.githubassetpublish.lib
 
 import dev.adamko.githubassetpublish.lib.Logger.Companion.warn
-import dev.adamko.githubassetpublish.lib.internal.computeChecksum
 import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
 import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata
 import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata.Companion.saveTo
+import dev.adamko.githubassetpublish.lib.utils.computeChecksum
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.*
@@ -40,12 +40,8 @@ class PrepareGitHubAssetsAction(
       }
       .associateWith { rootModule ->
         allModules.filter { module ->
-          module.gmm.component.url != null &&
-              module.gmm.component.group == rootModule.gmm.component.group &&
-              module.gmm.component.module == rootModule.gmm.component.module &&
-              module.gmm.component.version == rootModule.gmm.component.version
-        }
-          .toList()
+          module.belongsTo(rootModule)
+        }.toList()
       }
 
     mapRootModuleToVariants.forEach { (rootModule, variants) ->
@@ -272,6 +268,13 @@ class PrepareGitHubAssetsAction(
         stagingMavenRepo = stagingMavenRepo,
         destinationDir = destinationDir,
       )
+    }
+
+    private fun GradleModule.belongsTo(rootModule: GradleModule): Boolean {
+      return gmm.component.url != null &&
+          gmm.component.group == rootModule.gmm.component.group &&
+          gmm.component.module == rootModule.gmm.component.module &&
+          gmm.component.version == rootModule.gmm.component.version
     }
   }
 }
