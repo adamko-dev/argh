@@ -6,10 +6,6 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.deleteRecursively
 import kotlin.io.path.writeText
 
-//import org.gradle.api.attributes.Usage.JAVA_RUNTIME
-//import org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE
-//import org.gradle.kotlin.dsl.support.serviceOf
-
 plugins {
   buildsrc.`kotlin-gradle-plugin`
 }
@@ -26,10 +22,10 @@ gradlePlugin {
 dependencies {
   implementation(projects.modules.libAssetUploaderApi)
 
-//  devPublication(projects.modules.libGmmRewriter)
   devPublication(projects.modules.libAssetUploader)
   devPublication(projects.modules.libAssetUploaderApi)
   devPublication(projects.modules.libGmm)
+  devPublication(projects.modules.libUtils)
 }
 
 testing {

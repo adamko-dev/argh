@@ -1,9 +1,11 @@
-import dev.adamko.github.GitHubClient
+import io.ktor.client.HttpClient
 
 
 suspend fun demo(
-  gh: GitHubClient
+  gh: GitHubClient,
+//  httpClient: HttpClient,
 ) {
+//  httpClient.get
   gh.repos.getRelease(
     owner = "",
     repo = "",
