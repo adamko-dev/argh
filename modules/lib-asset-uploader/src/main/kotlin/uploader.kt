@@ -116,6 +116,8 @@ private fun upload(
   gh.releaseUpload(tag = version, files = filesToUpload)
 
   println("Upload process completed for version: $version")
+
+  // TODO validate checksum of uploaded files
 }
 
 
