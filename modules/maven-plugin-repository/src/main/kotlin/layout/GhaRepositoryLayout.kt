@@ -1,6 +1,5 @@
 package dev.adamko.githubassetpublish.maven.layout
 
-import java.io.Closeable
 import java.net.URI
 import org.eclipse.aether.artifact.Artifact
 import org.eclipse.aether.metadata.Metadata
@@ -12,10 +11,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 class GhaRepositoryLayout(
-//  private val id: String,
-//  url: String,
   private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
-) : RepositoryLayout, Closeable {
+) : RepositoryLayout {
   private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
   override fun getChecksumAlgorithmFactories(): List<ChecksumAlgorithmFactory> {
@@ -23,8 +20,6 @@ class GhaRepositoryLayout(
       listOf(
         "SHA-512",
         "SHA-256",
-        //"SHA-1",
-        //"MD5",
       )
     )
     return emptyList()
@@ -35,22 +30,8 @@ class GhaRepositoryLayout(
   }
 
   override fun getLocation(artifact: Artifact, upload: Boolean): URI {
-    val uri = releaseAssetUri(
-      groupId = artifact.groupId,
-      version = artifact.version,
-      file = buildString {
-        append(artifact.artifactId)
-        append("-")
-        append(artifact.version)
-        artifact.classifier.ifEmpty { null }?.let {
-          append("-")
-          append(it)
-        }
-        append(".")
-        append(artifact.extension)
-      },
-    )
-    logger.info("getLocation artifact: $uri")
+    val uri = artifact.toReleaseAssetUri()
+    logger.debug("getLocation artifact: $uri")
     return uri
   }
 
@@ -67,7 +48,7 @@ class GhaRepositoryLayout(
       },
     )
 
-    logger.info("getLocation metadata: $uri")
+    logger.debug("getLocation metadata: $uri")
 
     return uri
   }
@@ -77,10 +58,14 @@ class GhaRepositoryLayout(
     upload: Boolean,
     location: URI
   ): List<ChecksumLocation> {
-//    if (artifact.extension == "pom") {
-//
-//    }
-    return emptyList()
+    if (upload) return emptyList()
+
+    return checksumAlgorithmFactorySelector.checksumAlgorithmFactories.map { factory ->
+      val uri = artifact.toReleaseAssetUri(
+        computeExtension = { original -> ".$original.${factory.algorithm}" }
+      )
+      ChecksumLocation(uri, factory)
+    }
   }
 
   override fun getChecksumLocations(
@@ -88,19 +73,43 @@ class GhaRepositoryLayout(
     upload: Boolean,
     location: URI
   ): List<ChecksumLocation> {
+    // Metadata, e.g. `maven-metadata.xml`, is not supported.
+    // https://maven.apache.org/repositories/metadata.html
     return emptyList()
-//
-//
-//    metadata.type
-//
-//    ChecksumLocation(
-//      location = TODO(),
-//      checksumAlgorithmFactory = TODO(),
-//    )
   }
+}
 
-  override fun close() {
-  }
+private fun Artifact.toReleaseAssetUri(
+  computeExtension: (original: String) -> String = { it },
+): URI {
+  releaseAssetUri(
+    groupId = groupId,
+    version = version,
+    file = buildString {
+      append(artifactId)
+      append("-")
+      append(version)
+      classifier.ifEmpty { null }?.let {
+        append("-")
+        append(it)
+      }
+      append(".")
+      append(computeExtension(extension))
+    },
+  )
+
+  return releaseAssetUri(
+    groupId = groupId,
+    version = version,
+    file = buildString {
+      append(artifactId)
+      append("-")
+      append(version)
+      classifier.ifEmpty { null }?.let {
+        append("-")
+      }
+    }
+  )
 }
 
 private fun releaseAssetUri(

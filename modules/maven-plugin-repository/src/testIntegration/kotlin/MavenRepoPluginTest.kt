@@ -165,7 +165,7 @@ private fun pomXml(): String {
     <dependencies>
       <dependency>
         <groupId>asemy.demo-github-asset-publish-repo</groupId>
-        <artifactId>test-project</artifactId>
+        <artifactId>test-project-jvm</artifactId>
         <version>1.0.0</version>
       </dependency>
     </dependencies>

@@ -16,11 +16,6 @@ class GhaRepositoryLayoutFactory
 internal constructor(
   private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
 ) : RepositoryLayoutFactory {
-//  private val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(javaClass)
-
-//  init {
-//    logger.warn("new GitHubAssetsRepositoryLayoutFactory")
-//  }
 
   override fun newInstance(
     session: RepositorySystemSession,
