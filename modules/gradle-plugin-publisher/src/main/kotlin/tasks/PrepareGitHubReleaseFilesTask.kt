@@ -38,9 +38,6 @@ internal constructor(
   @get:Classpath
   abstract val runtimeClasspath: ConfigurableFileCollection
 
-//  @get:Internal
-//  abstract val workDir: DirectoryProperty
-
   @TaskAction
   protected fun taskAction() {
     prepareDestinationDirectory()

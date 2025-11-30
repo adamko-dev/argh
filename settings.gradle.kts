@@ -33,8 +33,6 @@ include(
   ":modules:lib-gmm",
   ":modules:lib-utils",
   ":modules:lib-github-rest-client",
-  ":modules:lib-github-rest-client-generator",
-//  ":modules:lib-gmm-rewriter",
   ":modules:maven-plugin-publisher",
   ":modules:maven-plugin-repository",
 )

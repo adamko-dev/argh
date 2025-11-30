@@ -87,6 +87,7 @@ class PrepareGitHubAssetsAction(
 
   private data class GradleModule(
     val gmmFile: Path,
+    val pomFile: Path,
     val gmm: MutableGradleModuleMetadata,
   ) {
 
@@ -111,13 +112,13 @@ class PrepareGitHubAssetsAction(
   ) {
     val errors = mutableListOf<String>()
 
-    val invalidGroups = variants.filter { (_, moduleGmm) ->
+    val invalidGroups = variants.filter { (_, _, moduleGmm) ->
       moduleGmm.component.group != root.gmm.component.group
     }
     if (invalidGroups.isNotEmpty()) {
       errors.add("The group of all variants must be '${root.gmm.component.group}', but found: $invalidGroups")
     }
-    val invalidVersions = variants.filter { (_, moduleGmm) ->
+    val invalidVersions = variants.filter { (_, _, moduleGmm) ->
       moduleGmm.component.version != root.gmm.component.version
     }
     if (invalidVersions.isNotEmpty()) {
@@ -153,9 +154,12 @@ class PrepareGitHubAssetsAction(
       src.copyTo(destinationDir.resolve(src.name), overwrite = false)
     }
 
+    val relocatedPomFile = module.pomFile.copyTo(destinationDir.resolve(module.pomFile.name))
+
     return GradleModule(
       gmmFile = relocatedGmmFile,
       gmm = MutableGradleModuleMetadata.loadFrom(relocatedGmmFile),
+      pomFile = relocatedPomFile,
     )
   }
 
@@ -165,11 +169,17 @@ class PrepareGitHubAssetsAction(
     stagingMavenRepo.walk()
       .filter { it.isRegularFile() && it.extension == "module" }
       .mapNotNull { moduleFile ->
+
+        val pomFile = moduleFile.run {
+          resolveSibling("$nameWithoutExtension.pom")
+        }
+
         try {
           val metadata = MutableGradleModuleMetadata.loadFrom(moduleFile)
           GradleModule(
             gmmFile = moduleFile,
             gmm = metadata,
+            pomFile = pomFile,
           )
         } catch (ex: Exception) {
           logger.warn("failed to load moduleFile ${moduleFile.invariantSeparatorsPathString}", ex)
@@ -242,12 +252,14 @@ class PrepareGitHubAssetsAction(
       "256",
       "512",
     ).forEach { bits ->
-      val checksum = module.gmmFile.computeChecksum("SHA-$bits")
-      module.gmmFile.resolveSibling(module.gmmFile.name + ".sha$bits")
-        .writeText(
-          checksum,
-          options = arrayOf(StandardOpenOption.CREATE_NEW),
-        )
+      module.gmmFile.createShaChecksumFile(bits)
+      module.pomFile.createShaChecksumFile(bits)
+//      val checksum = module.gmmFile.computeChecksum("SHA-$bits")
+//      module.gmmFile.resolveSibling(module.gmmFile.name + ".sha$bits")
+//        .writeText(
+//          checksum,
+//          options = arrayOf(StandardOpenOption.CREATE_NEW),
+//        )
     }
   }
 
@@ -275,6 +287,12 @@ class PrepareGitHubAssetsAction(
           gmm.component.group == rootModule.gmm.component.group &&
           gmm.component.module == rootModule.gmm.component.module &&
           gmm.component.version == rootModule.gmm.component.version
+    }
+
+    private fun Path.createShaChecksumFile(bits: String) {
+      val checksum = computeChecksum("SHA-$bits")
+      resolveSibling("$name.sha$bits")
+        .writeText(checksum, options = arrayOf(StandardOpenOption.CREATE_NEW))
     }
   }
 }
