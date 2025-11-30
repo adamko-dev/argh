@@ -71,6 +71,13 @@ internal constructor(
     return project.extensions.create<GitHubAssetPublishExtension>("gitHubAssetPublish").apply {
       gapBuildDir.convention(project.layout.buildDirectory.dir("github-asset-publish"))
       stagingRepoDir.convention(gapBuildDir.dir("staging-repo"))
+      artifactMetadataExtensions.convention(
+        setOf(
+          "sha256",
+          "sha512",
+          "asc",
+        )
+      )
     }
   }
 
@@ -85,6 +92,7 @@ internal constructor(
       task.destinationDirectory.convention(
         layout.dir(providers.provider { task.temporaryDir })
       )
+      task.artifactMetadataExtensions.convention(gapExtension.artifactMetadataExtensions)
     }
 
     project.tasks.withType<UploadGitHubReleaseAssetsTask>().configureEach { task ->

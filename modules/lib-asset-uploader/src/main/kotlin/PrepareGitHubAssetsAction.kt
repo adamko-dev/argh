@@ -25,6 +25,7 @@ class PrepareGitHubAssetsAction(
   fun run(
     stagingMavenRepo: Path,
     destinationDir: Path,
+    artifactMetadataExtensions: Set<String>,
   ) {
     logger.debug(
       "Running PrepareGitHubAssetsAction." +
@@ -40,7 +41,7 @@ class PrepareGitHubAssetsAction(
       }
       .associateWith { rootModule ->
         allModules.filter { module ->
-          module.belongsTo(rootModule)
+          module.isAssociatedComponentOf(rootModule)
         }.toList()
       }
 
@@ -58,6 +59,7 @@ class PrepareGitHubAssetsAction(
           relocateModule(
             module = rootModule,
             destinationDir = destinationDir,
+            artifactMetadataExtensions = artifactMetadataExtensions,
           )
         }
         .mapValues { (_, modules) ->
@@ -65,6 +67,7 @@ class PrepareGitHubAssetsAction(
             relocateModule(
               module = module,
               destinationDir = destinationDir,
+              artifactMetadataExtensions = artifactMetadataExtensions,
             )
           }
         }
@@ -146,12 +149,32 @@ class PrepareGitHubAssetsAction(
   private fun relocateModule(
     module: GradleModule,
     destinationDir: Path,
+    artifactMetadataExtensions: Set<String>,
   ): GradleModule {
     val relocatedGmmFile = module.gmmFile.copyTo(destinationDir.resolve(module.gmmFile.name))
 
     module.artifacts.forEach { src ->
-      logger.info("relocating file: $src to ${destinationDir.resolve(src.name)}")
+      val projectDir =
+        Path(src.invariantSeparatorsPathString.commonPrefixWith(destinationDir.invariantSeparatorsPathString))
+      logger.info(
+        "relocating file: ${src.relativeTo(projectDir)} to ${
+          destinationDir.resolve(src.name).relativeTo(projectDir)
+        }"
+      )
       src.copyTo(destinationDir.resolve(src.name), overwrite = false)
+
+
+      val artifactMetadataFiles =
+        artifactMetadataExtensions
+          .map { ext -> src.resolveSibling("${src.name}.$ext") }
+
+      logger.info("artifact ${src.name} has metadata files: ${artifactMetadataFiles.joinToString { it.name + if (it.isRegularFile()) "" else " (not found)" }}")
+
+      artifactMetadataFiles.forEach { metadata ->
+        if (metadata.isRegularFile()) {
+          metadata.copyTo(destinationDir.resolve(metadata.name), overwrite = false)
+        }
+      }
     }
 
     val relocatedPomFile = module.pomFile.copyTo(destinationDir.resolve(module.pomFile.name))
@@ -230,11 +253,11 @@ class PrepareGitHubAssetsAction(
     destinationDir: Path,
   ) {
     val rootModuleName = metadata.component.module + "-" + metadata.component.version
-    destinationDir
-      .resolve("$rootModuleName.ivy.xml")
-      .writeText(
-        // language=xml
-        """
+
+    val ivyModuleFile = destinationDir.resolve("$rootModuleName.ivy.xml")
+    ivyModuleFile.writeText(
+      // language=xml
+      """
         |<?xml version="1.0"?>
         |<ivy-module version="2.0"
         |            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -243,8 +266,15 @@ class PrepareGitHubAssetsAction(
         |    <info organisation="${metadata.component.group}" module="${metadata.component.module}" revision="${metadata.component.version}" />
         |</ivy-module>
         |""".trimMargin(),
-        options = arrayOf(StandardOpenOption.CREATE_NEW),
-      )
+      options = arrayOf(StandardOpenOption.CREATE_NEW),
+    )
+
+    setOf(
+      "256",
+      "512",
+    ).forEach { bits ->
+      ivyModuleFile.createShaChecksumFile(bits)
+    }
   }
 
   private fun createModuleChecksums(module: GradleModule) {
@@ -273,16 +303,22 @@ class PrepareGitHubAssetsAction(
 
       val stagingMavenRepo = Path(getArg("stagingMavenRepo"))
       val destinationDir = Path(getArg("destinationDir"))
+      val artifactMetadataExtensions = getArg("artifactMetadataExtensions")
+        .split(",")
+        .map(String::trim)
+        .filter(String::isNotBlank)
+        .toSet()
 
       val action = PrepareGitHubAssetsAction()
 
       action.run(
         stagingMavenRepo = stagingMavenRepo,
         destinationDir = destinationDir,
+        artifactMetadataExtensions = artifactMetadataExtensions,
       )
     }
 
-    private fun GradleModule.belongsTo(rootModule: GradleModule): Boolean {
+    private fun GradleModule.isAssociatedComponentOf(rootModule: GradleModule): Boolean {
       return gmm.component.url != null &&
           gmm.component.group == rootModule.gmm.component.group &&
           gmm.component.module == rootModule.gmm.component.module &&

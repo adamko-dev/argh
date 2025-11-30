@@ -8,9 +8,6 @@ import kotlin.io.path.Path
 import kotlin.io.path.invariantSeparatorsPathString
 import kotlin.io.path.listDirectoryEntries
 import kotlin.io.path.name
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.serializer
-import kotlinx.serialization.json.Json
 
 fun main(args: Array<String>) {
   /*
@@ -100,12 +97,17 @@ private fun upload(
   // Check if the release already has files
   val existingFiles: List<String> =
     gh.releaseListAssets(tag = version)
-      .ifBlank { "[]" }
-      .let { Json.decodeFromString(ListSerializer(String.serializer()), it) }
+      .lines()
+      .filter(String::isNotBlank)
 
 
+  // TODO if the release is a draft or prerelease then...
+  //      1. fetch the attached module files (if any)
+  //      2. extract the artifacts (and metadata files).
+  //      3. delete the attached files.
+  //      Until then, just abort early.
   if (existingFiles.isNotEmpty()) {
-    error("Release $version already has files. Exiting.")
+    error("Release $version already has ${existingFiles.size} file(s) $existingFiles. Exiting.")
   }
 
 
