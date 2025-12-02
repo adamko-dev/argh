@@ -26,6 +26,8 @@ kotlin {
       "-Xwhen-guards",
       "-Xnon-local-break-continue",
       "-Xmulti-dollar-interpolation",
+      "-Xnested-type-aliases",
+      "-Xcontext-sensitive-resolution",
     )
 
     freeCompilerArgs.add(jvmTarget.map { "-Xjdk-release=${it.target}" })
