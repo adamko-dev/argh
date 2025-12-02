@@ -22,6 +22,7 @@ internal constructor() {
 
   internal abstract val gapBuildDir: DirectoryProperty
   internal abstract val stagingRepoDir: DirectoryProperty
+  internal abstract val pluginCacheDir: DirectoryProperty
 
   val stagingRepoName: String = "GitHubAssetPublishStaging"
 }

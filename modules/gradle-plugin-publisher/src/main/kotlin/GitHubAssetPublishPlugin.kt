@@ -2,6 +2,7 @@
 
 package dev.adamko.githubassetpublish
 
+import dev.adamko.githubassetpublish.internal.PluginCacheDirSource.Companion.pluginCacheDirSource
 import dev.adamko.githubassetpublish.internal.UploadReleaseDependencies
 import dev.adamko.githubassetpublish.tasks.PrepareGitHubReleaseFilesTask
 import dev.adamko.githubassetpublish.tasks.UploadGitHubReleaseAssetsTask
@@ -9,6 +10,7 @@ import javax.inject.Inject
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.ProjectLayout
+import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
@@ -22,6 +24,7 @@ abstract class GitHubAssetPublishPlugin
 internal constructor(
   private val providers: ProviderFactory,
   private val layout: ProjectLayout,
+  private val objects: ObjectFactory,
 ) : Plugin<Project> {
 
   override fun apply(project: Project) {
@@ -78,6 +81,12 @@ internal constructor(
           "asc",
         )
       )
+      pluginCacheDir.convention(
+        objects.directoryProperty()
+          .fileProvider(
+            providers.pluginCacheDirSource().map { it.toFile() }
+          )
+      )
     }
   }
 
@@ -101,6 +110,7 @@ internal constructor(
       task.githubRepo.convention(gapExtension.githubRepo)
       task.skipGitHubUpload.convention(false)
       task.releaseVersion.convention(providers.provider { project.version.toString() })
+      task.pluginCacheDir.convention(gapExtension.pluginCacheDir)
     }
   }
 }

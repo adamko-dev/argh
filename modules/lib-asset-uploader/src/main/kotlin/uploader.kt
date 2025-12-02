@@ -2,14 +2,17 @@
 
 package dev.adamko.githubassetpublish.lib
 
+import dev.adamko.githubapiclient.*
+import dev.adamko.githubapiclient.GitHubClient.Companion.GitHubClient
+import dev.adamko.githubapiclient.model.RepoReleaseAsset
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit.MINUTES
 import kotlin.io.path.Path
 import kotlin.io.path.invariantSeparatorsPathString
-import kotlin.io.path.listDirectoryEntries
-import kotlin.io.path.name
+import kotlin.io.path.useDirectoryEntries
+import kotlinx.coroutines.flow.toList
 
-fun main(args: Array<String>) {
+suspend fun main(args: Array<String>) {
   /*
 
   Requires `gh` cli is installed and authenticated.
@@ -34,6 +37,7 @@ fun main(args: Array<String>) {
   val githubRepo = getArg("githubRepo")
   val releaseVersion = getArg("releaseVersion")
   val releaseDir = getArg("releaseDir").let(::Path)
+  val pluginCacheDir = getArg("pluginCacheDir").let(::Path)
   val createNewReleaseIfMissing = getArg("createNewReleaseIfMissing").toBoolean()
 
   val release = FilesToUploadWithMetadata(
@@ -43,8 +47,9 @@ fun main(args: Array<String>) {
   )
 
   upload(
-    release = release,
+    srcRelease = release,
     createNewReleaseIfMissing = createNewReleaseIfMissing,
+    pluginCacheDir = pluginCacheDir,
   )
 }
 
@@ -63,42 +68,73 @@ private data class FilesToUploadWithMetadata(
 //    get() = version.endsWith("-SNAPSHOT")
 }
 
-private fun upload(
-  release: FilesToUploadWithMetadata,
+private suspend fun upload(
+  srcRelease: FilesToUploadWithMetadata,
   createNewReleaseIfMissing: Boolean,
+  pluginCacheDir: Path,
 ) {
-  val repo = release.repo
-  val version = release.version
-//  val isSnapshot = release.version.endsWith("-SNAPSHOT")
+  val (owner, repo) = srcRelease.repo.split("/", limit = 2)
+  val version = srcRelease.version
+  val isSnapshot = srcRelease.version.endsWith("-SNAPSHOT")
 //  val filesToUpload = release.filesToUpload
 
-  val gh = GitHub(
-    repo = repo,
-    workDir = release.releaseDir,
+  val gh = GitHubClient(
+    pluginCacheDir = pluginCacheDir
   )
+//  val gh = GitHub(
+//    repo = repo,
+//    workDir = release.releaseDir,
+//  )
 
-  val ghVersion = gh.version() ?: error("gh not installed")
-  println("using gh version: $ghVersion")
+//  val ghVersion = gh.version() ?: error("gh not installed")
+//  println("using gh version: $ghVersion")
 
   println("Starting upload process for version: $version, repo: $repo")
 
   // Check if the release exists
-  if (gh.releaseView(tag = version) == null) {
-    if (createNewReleaseIfMissing) {
-      println("Creating new release $version...")
-      val result = gh.releaseCreate(tag = version)
-      println(result)
+  val ghRelease = run {
+    val result = gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version)
+    if (result != null) {
+      return@run result
     } else {
-      error("Release $version does not exist and createNewReleaseIfMissing is false.")
+      if (createNewReleaseIfMissing) {
+        gh.repos.createRelease(
+          owner = owner,
+          repo = repo,
+          tagName = version,
+          draft = true,
+          prerelease = isSnapshot,
+        )
+        gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version)
+          ?: error("Release $version was created but cannot be retrieved.")
+      } else {
+        error("Release $version does not exist and createNewReleaseIfMissing is false.")
+      }
     }
   }
+//  if (gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version) == null) {
+//    if (createNewReleaseIfMissing) {
+//      println("Creating new release $version...")
+//      val result = gh.repos.createRelease(
+//        owner = owner,
+//        repo = repo,
+//        tagName = version,
+//      )
+//      println(result)
+//    } else {
+//      error("Release $version does not exist and createNewReleaseIfMissing is false.")
+//    }
+//  }
 
 
   // Check if the release already has files
-  val existingFiles: List<String> =
-    gh.releaseListAssets(tag = version)
-      .lines()
-      .filter(String::isNotBlank)
+  val existingFiles: List<RepoReleaseAsset> =
+    gh.repos.listAllReleaseAssets(
+      owner = owner,
+      repo = repo,
+      releaseId = ghRelease.id,
+      perPage = 100,
+    ).toList()
 
 
   // TODO if the release is a draft or prerelease then...
@@ -113,9 +149,19 @@ private fun upload(
 
   // Upload new files
   println("Uploading files to release $version...")
-  val filesToUpload = release.releaseDir.listDirectoryEntries().map { it.name }
 
-  gh.releaseUpload(tag = version, files = filesToUpload)
+  srcRelease.releaseDir.useDirectoryEntries { srcFiles ->
+    srcFiles.forEach { srcFile ->
+      gh.repos.uploadReleaseAsset(
+        owner = owner,
+        repo = repo,
+        releaseId = ghRelease.id,
+        file = srcFile
+      )
+    }
+  }
+//  val filesToUpload = srcRelease.releaseDir.listDirectoryEntries().map { it.name }
+//  gh.releaseUpload(tag = version, files = filesToUpload)
 
   println("Upload process completed for version: $version")
 

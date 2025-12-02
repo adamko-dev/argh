@@ -26,6 +26,7 @@ dependencies {
   devPublication(projects.modules.libAssetUploaderApi)
   devPublication(projects.modules.libGmm)
   devPublication(projects.modules.libUtils)
+  devPublication(projects.modules.libGithubRestClient)
 }
 
 testing {

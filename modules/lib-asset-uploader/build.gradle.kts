@@ -6,6 +6,7 @@ plugins {
 dependencies {
   implementation(projects.modules.libGmm)
   implementation(projects.modules.libAssetUploaderApi)
+  implementation(projects.modules.libGithubRestClient)
 
   implementation(projects.modules.libUtils)
 

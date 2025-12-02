@@ -35,6 +35,11 @@ internal constructor(
   @get:IgnoreEmptyDirectories
   abstract val preparedAssetsDir: DirectoryProperty
 
+  @get:InputFiles
+  @get:PathSensitive(RELATIVE)
+  @get:IgnoreEmptyDirectories
+  abstract val pluginCacheDir: DirectoryProperty
+
   @get:Input
   @get:Option(option = "skipGitHubUpload", description = "Skip uploading to GitHub, just prepares the files.")
   abstract val skipGitHubUpload: Property<Boolean>
@@ -76,6 +81,7 @@ internal constructor(
           add("releaseVersion=${releaseVersion.get()}")
           add("createNewReleaseIfMissing=${createNewReleaseIfMissing.get()}")
           add("releaseDir=${preparedAssetsDir.get().asFile.invariantSeparatorsPath}")
+          add("pluginCacheDir=${pluginCacheDir.get().asFile.invariantSeparatorsPath}")
         }
       )
     }

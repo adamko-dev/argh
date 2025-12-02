@@ -1,4 +1,17 @@
+package dev.adamko.githubapiclient
+
+import dev.adamko.githubapiclient.endpoints.repos.*
+import dev.adamko.githubapiclient.endpoints.repos.CreateRelease.RequestBody.MakeLatest
+import dev.adamko.githubapiclient.model.RepoReleaseAsset
+import io.ktor.client.call.*
 import io.ktor.client.plugins.resources.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.util.cio.*
+import java.nio.file.Path
+import kotlin.io.path.name
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 
 /**
@@ -18,14 +31,13 @@ suspend fun GitHubClient.Repos.getRelease(
   owner: String,
   repo: String,
   releaseId: Int,
-): java.lang.Object {
-  val resource = GitHubClient.Repos.GetRelease.Route(
+): GetRelease.ResponseBody {
+  val resource = GetRelease.Route(
     owner = owner,
     repo = repo,
     releaseId = releaseId,
   )
-  val result = httpClient.get(resource = resource) {}
-  TODO()
+  return httpClient.get(resource = resource).body()
 }
 
 /**
@@ -45,8 +57,8 @@ suspend fun GitHubClient.Repos.getReleaseAsset(
   owner: String,
   repo: String,
   assetId: Int,
-): java.lang.Object {
-  val resource = GitHubClient.Repos.GetReleaseAsset.Route(
+): GetReleaseAsset.ResponseBody {
+  val resource = GetReleaseAsset.Route(
     owner = owner,
     repo = repo,
     assetId = assetId,
@@ -66,14 +78,76 @@ suspend fun GitHubClient.Repos.getReleaseByTag(
   owner: String,
   repo: String,
   tag: String,
-): java.lang.Object {
-  val resource = GitHubClient.Repos.GetReleaseByTag.Route(
+): GetReleaseByTag.ResponseBody {
+  val resource = GetReleaseByTag.Route(
     owner = owner,
     repo = repo,
     tag = tag,
   )
-  val result = httpClient.get(resource = resource) {}
-  TODO()
+  val response = httpClient.get(resource = resource)
+  return response.body()
+}
+
+/**
+ * ### Get a release by tag name
+ *
+ * Get a published release with the specified tag.
+ *
+ * Returns `null` if the release does not exist.
+ *
+ * `repos/get-release-by-tag`
+ */
+suspend fun GitHubClient.Repos.getReleaseByTagOrNull(
+  owner: String,
+  repo: String,
+  tag: String,
+): GetReleaseByTag.ResponseBody? {
+  val resource = GetReleaseByTag.Route(
+    owner = owner,
+    repo = repo,
+    tag = tag,
+  )
+  val response = httpClient.get(resource = resource)
+  return if (response.status == HttpStatusCode.NotFound) {
+    null
+  } else {
+    response.body()
+  }
+}
+
+
+suspend fun GitHubClient.Repos.createRelease(
+  owner: String,
+  repo: String,
+  tagName: String,
+  targetCommitish: String? = null,
+  name: String? = null,
+  body: String? = null,
+  draft: Boolean = false,
+  prerelease: Boolean = false,
+  discussionCategoryName: String? = null,
+  generateReleaseNotes: Boolean = false,
+  makeLatest: MakeLatest? = null,
+): CreateRelease.ResponseBody? {
+  val resource = CreateRelease.Route(
+    owner = owner,
+    repo = repo,
+  )
+  val request = CreateRelease.RequestBody(
+    tagName = tagName,
+    targetCommitish = targetCommitish,
+    name = name,
+    body = body,
+    draft = draft,
+    prerelease = prerelease,
+    discussionCategoryName = discussionCategoryName,
+    generateReleaseNotes = generateReleaseNotes,
+    makeLatest = makeLatest,
+  )
+  val response = httpClient.get(resource = resource) {
+    setBody(request)
+  }
+  return response.body()
 }
 
 
@@ -113,20 +187,80 @@ suspend fun GitHubClient.Repos.getReleaseByTag(
  *
  * *   If you upload an asset with the same filename as another uploaded asset, you'll receive an error and must delete the old file before you can re-upload the new asset.
  *
- * `repos/upload-release-asset`
+ * https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#upload-a-release-asset
  */
 suspend fun GitHubClient.Repos.uploadReleaseAsset(
   owner: String,
   repo: String,
   releaseId: Int,
-  name: String,
+  file: Path,
+  name: String = file.name,
   label: String? = null,
-) {
-  val resource = GitHubClient.Repos.UploadReleaseAsset.Route(
+): UploadReleaseAsset.ResponseBody {
+  val resource = UploadReleaseAsset.Route(
     owner = owner,
     repo = repo,
     releaseId = releaseId,
+    name = name,
+    label = label,
   )
-  val result = httpClient.post(resource = resource) {}
-  TODO()
+  val result = httpClient.post(resource = resource) {
+    setBody(file.readChannel())
+  }
+  return result.body()
+}
+
+
+/**
+ * ## List release assets
+ *
+ * @param[perPage]
+ * The number of results per page (max 100).
+ * For more information, see
+ * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
+ */
+suspend fun GitHubClient.Repos.listReleaseAssets(
+  owner: String,
+  repo: String,
+  releaseId: Int,
+  perPage: Int? = null,
+  page: Int? = null,
+): ListReleaseAssets.ResponseBody {
+  val resource = ListReleaseAssets.Route(
+    owner = owner,
+    repo = repo,
+    releaseId = releaseId,
+    perPage = perPage,
+    page = page,
+  )
+  val response = httpClient.get(resource = resource)
+  return response.body()
+}
+
+/**
+ * ## List release assets
+ *
+ * @param[perPage]
+ * The number of results per page (max 100).
+ * For more information, see
+ * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
+ */
+fun GitHubClient.Repos.listAllReleaseAssets(
+  owner: String,
+  repo: String,
+  releaseId: Int,
+  perPage: Int? = null,
+  page: Int? = null,
+): Flow<RepoReleaseAsset> {
+  return flow {
+    listReleaseAssets(
+      owner = owner,
+      repo = repo,
+      releaseId = releaseId,
+      perPage = perPage,
+      page = page,
+    ).forEach { asset ->
+      emit(asset)
+    }
+  }
 }
