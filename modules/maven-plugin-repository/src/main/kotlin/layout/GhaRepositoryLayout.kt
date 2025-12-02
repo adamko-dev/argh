@@ -1,5 +1,6 @@
 package dev.adamko.githubassetpublish.maven.layout
 
+import dev.adamko.githubassetpublish.maven.modify
 import java.net.URI
 import org.eclipse.aether.artifact.Artifact
 import org.eclipse.aether.metadata.Metadata
@@ -60,10 +61,12 @@ class GhaRepositoryLayout(
   ): List<ChecksumLocation> {
     if (upload) return emptyList()
 
+    val uri = artifact.toReleaseAssetUri()
+
     return checksumAlgorithmFactorySelector.checksumAlgorithmFactories.map { factory ->
-      val uri = artifact.toReleaseAssetUri(
-        computeExtension = { original -> ".$original.${factory.algorithm}" }
-      )
+      uri.modify {
+        path += ".${factory.algorithm}"
+      }
       ChecksumLocation(uri, factory)
     }
   }
@@ -79,25 +82,7 @@ class GhaRepositoryLayout(
   }
 }
 
-private fun Artifact.toReleaseAssetUri(
-  computeExtension: (original: String) -> String = { it },
-): URI {
-  releaseAssetUri(
-    groupId = groupId,
-    version = version,
-    file = buildString {
-      append(artifactId)
-      append("-")
-      append(version)
-      classifier.ifEmpty { null }?.let {
-        append("-")
-        append(it)
-      }
-      append(".")
-      append(computeExtension(extension))
-    },
-  )
-
+private fun Artifact.toReleaseAssetUri(): URI {
   return releaseAssetUri(
     groupId = groupId,
     version = version,
@@ -108,6 +93,8 @@ private fun Artifact.toReleaseAssetUri(
       classifier.ifEmpty { null }?.let {
         append("-")
       }
+      append(".")
+      append(extension)
     }
   )
 }

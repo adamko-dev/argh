@@ -25,7 +25,7 @@ constructor(
     session: RepositorySystemSession,
     repository: RemoteRepository,
   ): RepositoryConnector {
-    logger.warn("GhaRepositoryConnectorFactory newInstance: ${repository.contentType}")
+    logger.debug("GhaRepositoryConnectorFactory newInstance: ${repository.contentType}")
     if (repository.contentType != GitHubAssetsContentType) {
       throw NoRepositoryConnectorException(repository)
     }
