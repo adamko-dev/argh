@@ -10,6 +10,8 @@ slf4j = "2.0.17"
 
 ktor = "3.3.2"
 
+kotlinx-coroutines = "1.10.2"
+
 [libraries]
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
@@ -33,5 +35,7 @@ ktorClient-logging = { module = "io.ktor:ktor-client-logging", version.ref = "kt
 
 
 ktorSerialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 
 [plugins]
