@@ -129,6 +129,8 @@ class GppTest {
     @TempDir
     projectDir: Path
   ) {
+    val projectVersion = "1.0.0"
+
     projectDir.resolve("gradle.properties").writeText(
       """
       |org.gradle.jvmargs=-Dfile.encoding=UTF-8
@@ -169,7 +171,7 @@ class GppTest {
       |}
       |
       |group = "aSemy.demo-github-asset-publish-repo"
-      |version = "1.0.0"
+      |version = "$projectVersion"
       |
       |kotlin {
       |  jvm()
@@ -201,6 +203,7 @@ class GppTest {
         "--skipGitHubUpload",
         "--stacktrace",
       )
+      .forwardOutput()
       .build()
 
     val githubReleaseFilesDir = projectDir.resolve("build/tmp/prepareAssetsTask/")
@@ -219,59 +222,89 @@ class GppTest {
       }
       .toList()
 
+//    buildList {
+//      listOf(
+//        "",
+//        "-js",
+//        "-linuxX64",
+//      ).forEach { variant ->
+//        listOf(
+//          "sources.jar",
+//          ".jar",
+//          ".klib",
+//          ".module",
+//          ".pom",
+//        ).forEach { artifact ->
+//          add("test-project$variant-$projectVersion-$artifact")
+//          if (variant == "") {
+//            add("test-project$variant-$projectVersion.ivy.xml")
+//          }
+//          listOf(
+//            ".sha256",
+//            ".sha512",
+//          ).forEach { checksum ->
+//            add("test-project$variant-$projectVersion-$artifact$checksum")
+//            if (variant == "") {
+//              add("test-project$variant-$projectVersion.ivy.xml$checksum")
+//            }
+//          }
+//        }
+//      }
+//    }
+
     assertLinesMatch(
       listOf(
-        "test-project-1.0.0-sources.jar",
-        "test-project-1.0.0-sources.jar.sha256",
-        "test-project-1.0.0-sources.jar.sha512",
-        "test-project-1.0.0.ivy.xml",
-        "test-project-1.0.0.ivy.xml.sha256",
-        "test-project-1.0.0.ivy.xml.sha512",
-        "test-project-1.0.0.jar",
-        "test-project-1.0.0.jar.sha256",
-        "test-project-1.0.0.jar.sha512",
-        "test-project-1.0.0.module",
-        "test-project-1.0.0.module.sha256",
-        "test-project-1.0.0.module.sha512",
-        "test-project-1.0.0.pom",
-        "test-project-1.0.0.pom.sha256",
-        "test-project-1.0.0.pom.sha512",
-        "test-project-js-1.0.0-sources.jar",
-        "test-project-js-1.0.0-sources.jar.sha256",
-        "test-project-js-1.0.0-sources.jar.sha512",
-        "test-project-js-1.0.0.klib",
-        "test-project-js-1.0.0.klib.sha256",
-        "test-project-js-1.0.0.klib.sha512",
-        "test-project-js-1.0.0.module",
-        "test-project-js-1.0.0.module.sha256",
-        "test-project-js-1.0.0.module.sha512",
-        "test-project-js-1.0.0.pom",
-        "test-project-js-1.0.0.pom.sha256",
-        "test-project-js-1.0.0.pom.sha512",
-        "test-project-jvm-1.0.0-sources.jar",
-        "test-project-jvm-1.0.0-sources.jar.sha256",
-        "test-project-jvm-1.0.0-sources.jar.sha512",
-        "test-project-jvm-1.0.0.jar",
-        "test-project-jvm-1.0.0.jar.sha256",
-        "test-project-jvm-1.0.0.jar.sha512",
-        "test-project-jvm-1.0.0.module",
-        "test-project-jvm-1.0.0.module.sha256",
-        "test-project-jvm-1.0.0.module.sha512",
-        "test-project-jvm-1.0.0.pom",
-        "test-project-jvm-1.0.0.pom.sha256",
-        "test-project-jvm-1.0.0.pom.sha512",
-        "test-project-linuxx64-1.0.0-sources.jar",
-        "test-project-linuxx64-1.0.0-sources.jar.sha256",
-        "test-project-linuxx64-1.0.0-sources.jar.sha512",
-        "test-project-linuxx64-1.0.0.klib",
-        "test-project-linuxx64-1.0.0.klib.sha256",
-        "test-project-linuxx64-1.0.0.klib.sha512",
-        "test-project-linuxx64-1.0.0.module",
-        "test-project-linuxx64-1.0.0.module.sha256",
-        "test-project-linuxx64-1.0.0.module.sha512",
-        "test-project-linuxx64-1.0.0.pom",
-        "test-project-linuxx64-1.0.0.pom.sha256",
-        "test-project-linuxx64-1.0.0.pom.sha512",
+        "test-project-$projectVersion-sources.jar",
+        "test-project-$projectVersion-sources.jar.sha256",
+        "test-project-$projectVersion-sources.jar.sha512",
+        "test-project-$projectVersion.ivy.xml",
+        "test-project-$projectVersion.ivy.xml.sha256",
+        "test-project-$projectVersion.ivy.xml.sha512",
+        "test-project-$projectVersion.jar",
+        "test-project-$projectVersion.jar.sha256",
+        "test-project-$projectVersion.jar.sha512",
+        "test-project-$projectVersion.module",
+        "test-project-$projectVersion.module.sha256",
+        "test-project-$projectVersion.module.sha512",
+        "test-project-$projectVersion.pom",
+        "test-project-$projectVersion.pom.sha256",
+        "test-project-$projectVersion.pom.sha512",
+        "test-project-js-$projectVersion-sources.jar",
+        "test-project-js-$projectVersion-sources.jar.sha256",
+        "test-project-js-$projectVersion-sources.jar.sha512",
+        "test-project-js-$projectVersion.klib",
+        "test-project-js-$projectVersion.klib.sha256",
+        "test-project-js-$projectVersion.klib.sha512",
+        "test-project-js-$projectVersion.module",
+        "test-project-js-$projectVersion.module.sha256",
+        "test-project-js-$projectVersion.module.sha512",
+        "test-project-js-$projectVersion.pom",
+        "test-project-js-$projectVersion.pom.sha256",
+        "test-project-js-$projectVersion.pom.sha512",
+        "test-project-jvm-$projectVersion-sources.jar",
+        "test-project-jvm-$projectVersion-sources.jar.sha256",
+        "test-project-jvm-$projectVersion-sources.jar.sha512",
+        "test-project-jvm-$projectVersion.jar",
+        "test-project-jvm-$projectVersion.jar.sha256",
+        "test-project-jvm-$projectVersion.jar.sha512",
+        "test-project-jvm-$projectVersion.module",
+        "test-project-jvm-$projectVersion.module.sha256",
+        "test-project-jvm-$projectVersion.module.sha512",
+        "test-project-jvm-$projectVersion.pom",
+        "test-project-jvm-$projectVersion.pom.sha256",
+        "test-project-jvm-$projectVersion.pom.sha512",
+        "test-project-linuxx64-$projectVersion-sources.jar",
+        "test-project-linuxx64-$projectVersion-sources.jar.sha256",
+        "test-project-linuxx64-$projectVersion-sources.jar.sha512",
+        "test-project-linuxx64-$projectVersion.klib",
+        "test-project-linuxx64-$projectVersion.klib.sha256",
+        "test-project-linuxx64-$projectVersion.klib.sha512",
+        "test-project-linuxx64-$projectVersion.module",
+        "test-project-linuxx64-$projectVersion.module.sha256",
+        "test-project-linuxx64-$projectVersion.module.sha512",
+        "test-project-linuxx64-$projectVersion.pom",
+        "test-project-linuxx64-$projectVersion.pom.sha256",
+        "test-project-linuxx64-$projectVersion.pom.sha512",
       ),
       githubReleaseFiles,
     )
@@ -280,9 +313,10 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        "--skipGitHubUpload",
+        //"--skipGitHubUpload",
         "--stacktrace",
       )
+      .forwardOutput()
       .build()
       .let { result ->
         println(result.output)

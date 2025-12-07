@@ -2,6 +2,7 @@ package dev.adamko.githubapiclient
 
 import dev.adamko.githubapiclient.endpoints.repos.*
 import dev.adamko.githubapiclient.endpoints.repos.CreateRelease.RequestBody.MakeLatest
+import dev.adamko.githubapiclient.model.RepoRelease
 import dev.adamko.githubapiclient.model.RepoReleaseAsset
 import io.ktor.client.call.*
 import io.ktor.client.plugins.resources.*
@@ -9,9 +10,12 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.util.cio.*
 import java.nio.file.Path
+import kotlin.io.path.fileSize
 import kotlin.io.path.name
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.isActive
 
 
 /**
@@ -128,7 +132,7 @@ suspend fun GitHubClient.Repos.createRelease(
   discussionCategoryName: String? = null,
   generateReleaseNotes: Boolean = false,
   makeLatest: MakeLatest? = null,
-): CreateRelease.ResponseBody? {
+): CreateRelease.ResponseBody {
   val resource = CreateRelease.Route(
     owner = owner,
     repo = repo,
@@ -144,7 +148,7 @@ suspend fun GitHubClient.Repos.createRelease(
     generateReleaseNotes = generateReleaseNotes,
     makeLatest = makeLatest,
   )
-  val response = httpClient.get(resource = resource) {
+  val response = httpClient.post(resource = resource) {
     setBody(request)
   }
   return response.body()
@@ -205,7 +209,13 @@ suspend fun GitHubClient.Repos.uploadReleaseAsset(
     label = label,
   )
   val result = httpClient.post(resource = resource) {
+    url {
+      host = "uploads.github.com"
+    }
     setBody(file.readChannel())
+    headers {
+      append(HttpHeaders.ContentLength, file.fileSize().toString())
+    }
   }
   return result.body()
 }
@@ -250,17 +260,63 @@ fun GitHubClient.Repos.listAllReleaseAssets(
   repo: String,
   releaseId: Int,
   perPage: Int? = null,
-  page: Int? = null,
+  page: Int = 1,
 ): Flow<RepoReleaseAsset> {
+  var page = page
   return flow {
-    listReleaseAssets(
-      owner = owner,
-      repo = repo,
-      releaseId = releaseId,
-      perPage = perPage,
-      page = page,
-    ).forEach { asset ->
-      emit(asset)
-    }
+    do {
+      val assets = listReleaseAssets(
+        owner = owner,
+        repo = repo,
+        releaseId = releaseId,
+        perPage = perPage,
+        page = page++,
+      )
+      if (assets.isEmpty()) break
+      assets.forEach { asset ->
+        emit(asset)
+      }
+    } while (currentCoroutineContext().isActive)
+  }
+}
+
+
+suspend fun GitHubClient.Repos.listReleases(
+  owner: String,
+  repo: String,
+  perPage: Int? = null,
+  page: Int? = null,
+): ListReleases.ResponseBody {
+  val resource = ListReleases.Route(
+    owner = owner,
+    repo = repo,
+    perPage = perPage,
+    page = page,
+  )
+  val response = httpClient.get(resource = resource)
+  return response.body()
+}
+
+
+fun GitHubClient.Repos.listAllReleases(
+  owner: String,
+  repo: String,
+  perPage: Int? = null,
+  page: Int = 1,
+): Flow<RepoRelease> {
+  var page = page
+  return flow {
+    do {
+      val releases = listReleases(
+        owner = owner,
+        repo = repo,
+        perPage = perPage,
+        page = page++,
+      )
+      if (releases.isEmpty()) break
+      releases.forEach { asset ->
+        emit(asset)
+      }
+    } while (currentCoroutineContext().isActive)
   }
 }

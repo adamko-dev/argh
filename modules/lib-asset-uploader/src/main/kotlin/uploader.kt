@@ -3,13 +3,18 @@
 package dev.adamko.githubassetpublish.lib
 
 import dev.adamko.githubapiclient.*
-import dev.adamko.githubapiclient.GitHubClient.Companion.GitHubClient
 import dev.adamko.githubapiclient.model.RepoReleaseAsset
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit.MINUTES
 import kotlin.io.path.Path
 import kotlin.io.path.invariantSeparatorsPathString
+import kotlin.io.path.name
 import kotlin.io.path.useDirectoryEntries
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 
 suspend fun main(args: Array<String>) {
@@ -49,10 +54,12 @@ suspend fun main(args: Array<String>) {
   upload(
     srcRelease = release,
     createNewReleaseIfMissing = createNewReleaseIfMissing,
-    pluginCacheDir = pluginCacheDir,
+    tokenDataFile = pluginCacheDir.resolve("gh-token.json"),
   )
 }
 
+private val uploadReleaseAssetDispatcher: CoroutineDispatcher =
+  Dispatchers.IO.limitedParallelism(10)
 
 private data class FilesToUploadWithMetadata(
   /** Repository in the form of "owner/repo" */
@@ -71,15 +78,15 @@ private data class FilesToUploadWithMetadata(
 private suspend fun upload(
   srcRelease: FilesToUploadWithMetadata,
   createNewReleaseIfMissing: Boolean,
-  pluginCacheDir: Path,
-) {
+  tokenDataFile: Path,
+): Unit = coroutineScope {
   val (owner, repo) = srcRelease.repo.split("/", limit = 2)
   val version = srcRelease.version
   val isSnapshot = srcRelease.version.endsWith("-SNAPSHOT")
 //  val filesToUpload = release.filesToUpload
 
   val gh = GitHubClient(
-    pluginCacheDir = pluginCacheDir
+    tokenDataFile = tokenDataFile
   )
 //  val gh = GitHub(
 //    repo = repo,
@@ -93,20 +100,33 @@ private suspend fun upload(
 
   // Check if the release exists
   val ghRelease = run {
-    val result = gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version)
+    val result =
+      gh.repos.listAllReleases(
+        owner = owner,
+        repo = repo,
+        perPage = 100,
+      ).firstOrNull { it.tagName == version }
+//    val result = gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version)
     if (result != null) {
       return@run result
     } else {
       if (createNewReleaseIfMissing) {
+//        val created =
         gh.repos.createRelease(
           owner = owner,
           repo = repo,
           tagName = version,
           draft = true,
           prerelease = isSnapshot,
+          name = version,
         )
-        gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version)
-          ?: error("Release $version was created but cannot be retrieved.")
+//        check(created.content.size == 1) {
+//          "Failed to create release for $owner/$repo/$version. Got ${created.content.size}\n" +
+//              created.content.joinToString("\n") { "\t$it" }
+//        }
+//        created.content.single()
+//        gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version)
+//          ?: error("Release $version was created but cannot be retrieved.")
       } else {
         error("Release $version does not exist and createNewReleaseIfMissing is false.")
       }
@@ -146,18 +166,20 @@ private suspend fun upload(
     error("Release $version already has ${existingFiles.size} file(s) $existingFiles. Exiting.")
   }
 
-
   // Upload new files
-  println("Uploading files to release $version...")
+  println("Uploading files to release ${ghRelease.id}, $version...")
 
   srcRelease.releaseDir.useDirectoryEntries { srcFiles ->
     srcFiles.forEach { srcFile ->
-      gh.repos.uploadReleaseAsset(
-        owner = owner,
-        repo = repo,
-        releaseId = ghRelease.id,
-        file = srcFile
-      )
+      async(uploadReleaseAssetDispatcher) {
+        println("Attaching asset ${srcFile.name} to release ${ghRelease.id}")
+        gh.repos.uploadReleaseAsset(
+          owner = owner,
+          repo = repo,
+          releaseId = ghRelease.id,
+          file = srcFile,
+        )
+      }
     }
   }
 //  val filesToUpload = srcRelease.releaseDir.listDirectoryEntries().map { it.name }

@@ -11,6 +11,9 @@ dependencies {
   implementation(libs.ktorClient.logging)
   implementation(libs.ktorClient.resources)
   implementation(libs.ktorClient.contentNegotiation)
+  implementation(libs.ktorClient.auth)
 
   implementation(libs.ktorSerialization.kotlinxJson)
+
+  implementation(libs.slf4j.simple)
 }

@@ -1,39 +1,48 @@
 package dev.adamko.githubapiclient.auth
 
+import dev.adamko.githubapiclient.GitHubClientAcceptHeader
 import dev.adamko.githubapiclient.auth.AccessStatusResponse.Error.Code.*
+import dev.adamko.githubapiclient.gitHubApiVersion
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
-import java.nio.file.Path
-import kotlin.io.path.exists
-import kotlin.io.path.readText
-import kotlin.io.path.writeText
+import io.ktor.serialization.kotlinx.json.*
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 internal class ObtainAuthToken(
-  pluginCacheDir: Path,
+  private val authTokenStore: AuthTokenStore,
   private val httpClient: HttpClient = HttpClient(CIO) {
     defaultRequest {
       accept(ContentType.Application.Json)
     }
-  }
+    install(ContentNegotiation) {
+      json()
+    }
+  },
+//  private val clock: Clock = Clock.System,
 ) {
-  private val tokenDataFile: Path = pluginCacheDir.resolve("gh-token-data.json")
+  private val lock: Mutex = Mutex()
+//  private val expirationFudgeFactor = 60.seconds
+
+  private val statusCache = ConcurrentHashMap<String, Boolean>()
 
   /**
    * Is there a `GITHUB_TOKEN` environment variable? If so, use it.
@@ -44,61 +53,69 @@ internal class ObtainAuthToken(
    *
    * Otherwise, request a new token (and refresh token) using the device code flow.
    */
-  suspend fun action(): GitHubAuthToken {
+  suspend fun action(): GitHubAuthToken = lock.withLock {
 
     val envToken = System.getenv("GITHUB_TOKEN")
     if (envToken != null) {
       return GitHubAuthToken(envToken)
     }
 
-    val tokenData = if (tokenDataFile.exists()) {
-      try {
-        Json.decodeFromString(StoredTokenData.serializer(), tokenDataFile.readText())
-      } catch (ex: IllegalArgumentException) {
-        println("Failed to read token data from ${tokenDataFile.toAbsolutePath()}.")
-        ex.printStackTrace()
-        null
+    val tokenData = authTokenStore.load()
+
+    when {
+      tokenData == null                                                      ->
+        println("No token found")
+
+//      (tokenData.accessTokenExpiresAt + expirationFudgeFactor) < clock.now() ->
+//        println("Token ${tokenData.accessToken} expired ${tokenData.accessTokenExpiresAt} vs now:${clock.now() - 60.seconds}.")
+
+      !checkToken(tokenData.accessToken)                                     -> {
+        println("Token ${tokenData.accessToken} is not valid")
       }
-    } else {
-      null
-    }
+//      statusCache[tokenData.accessToken.token] != true                       -> {
+//        println("Token ${tokenData.accessToken} is not valid")
+//      }
 
-    if (
-      tokenData != null
-      && tokenData.accessTokenExpiresAt < Clock.System.now().minus(30.seconds)
-      && checkToken(tokenData.accessToken)
-    ) {
-      return tokenData.accessToken
-    }
-
-    if (
-      tokenData != null
-      && tokenData.refreshTokenExpiresAt < Clock.System.now().minus(30.seconds)
-    ) {
-      when (val t = getTokenFromRefreshToken(tokenData.refreshToken)) {
-        is AccessStatusResponse.Error   -> {
-          println("Refresh token not valid: ${t.description}")
-        }
-
-        is AccessStatusResponse.Success -> {
-          val updatedTokenData =
-            tokenData.copy(
-              accessToken = t.accessToken,
-            )
-          tokenDataFile.writeText(
-            Json.encodeToString(StoredTokenData.serializer(), updatedTokenData)
-          )
-          return updatedTokenData.accessToken
-        }
+      else                                                                   -> {
+        println("Token ${tokenData.accessToken} is valid")
+        return tokenData.accessToken
       }
     }
+
+//    when {
+//      tokenData == null
+//          || (tokenData.refreshTokenExpiresAt + expirationFudgeFactor) < clock.now() -> {
+//        println("Refresh token expired.")
+//      }
+//
+//      else                                                                           -> {
+//        when (val auth = getTokenFromRefreshToken(tokenData.refreshToken)) {
+//          is AccessStatusResponse.Error   -> {
+//            println("Refresh token not valid: ${auth.description}")
+//          }
+//
+//          is AccessStatusResponse.OAuthSuccess -> {
+//            println("Created new token using refresh token: ${auth.refreshToken}")
+//            authTokenStore.save(
+//              StoredTokenData(
+//                accessToken = auth.accessToken,
+//                accessTokenExpiresAt = clock.now() + auth.expiresIn.seconds,
+//                refreshToken = auth.refreshToken,
+//                refreshTokenExpiresAt = clock.now() + auth.refreshTokenExpiresIn.seconds,
+//              )
+//            )
+//            return auth.accessToken
+//          }
+//        }
+//      }
+//    }
 
     val deviceCodeResponse = initiateAuth()
 
     println(
       """
-        Requested auth.
-        Visit ${deviceCodeResponse.verificationUri} and enter code ${deviceCodeResponse.userCode}
+      Requested auth.
+      Visit ${deviceCodeResponse.verificationUri} and enter code ${deviceCodeResponse.userCode}
       """.trimIndent()
     )
 
@@ -106,56 +123,81 @@ internal class ObtainAuthToken(
 
     val updatedTokenData = StoredTokenData(
       accessToken = auth.accessToken,
-      accessTokenExpiresAt = Clock.System.now() + auth.expiresIn.seconds,
-      refreshToken = auth.refreshToken,
-      refreshTokenExpiresAt = Clock.System.now() + auth.refreshTokenExpiresIn.seconds,
+//      accessTokenExpiresAt = clock.now() + auth.expiresIn.seconds,
+//      refreshToken = auth.refreshToken,
+//      refreshTokenExpiresAt = clock.now() + auth.refreshTokenExpiresIn.seconds,
     )
 
-    tokenDataFile.writeText(Json.encodeToString(StoredTokenData.serializer(), updatedTokenData))
+    authTokenStore.save(updatedTokenData)
+
+    check(checkToken(updatedTokenData.accessToken)) {
+      "Token ${updatedTokenData.accessToken} is not valid"
+    }
 
     return updatedTokenData.accessToken
   }
 
   private suspend fun checkToken(token: GitHubAuthToken): Boolean {
+    if (statusCache[token.token] == true) {
+      return true
+    }
+
     val response = httpClient.get("https://api.github.com/user") {
-      header("Authorization", "token $token")
+      headers {
+        bearerAuth(token.token)
+        accept(GitHubClientAcceptHeader)
+        gitHubApiVersion()
+      }
+    }
+    if (response.status.isSuccess()) {
+      statusCache[token.token] = true
+    } else {
+      println("Checked token $token, response ${response.status} ${response.bodyAsText()}")
     }
     return response.status.isSuccess()
   }
 
   private suspend fun getTokenFromRefreshToken(refreshToken: String): AccessStatusResponse {
-    val response = httpClient.post("https://github.com/login/oauth/access_token") {
-      formData {
+    val response = httpClient.submitForm(
+      "https://github.com/login/oauth/access_token",
+      formParameters = parameters {
         append("client_id", CLIENT_ID)
         append("refresh_token", refreshToken)
         append("grant_type", "refresh_token")
       }
-    }
+    )
 
     return response.body()
   }
 
-  private suspend fun initiateAuth(): DeviceCodeResponse {
-    val response = httpClient.post("https://github.com/login/device/code") {
-      formData {
+  private suspend fun initiateAuth(): DeviceCodeResponse.Success {
+    val response = httpClient.submitForm(
+      "https://github.com/login/device/code",
+      formParameters = parameters {
         append("client_id", CLIENT_ID)
+        append("scope", "repo")
+//        append("scope", "repo,workflow")
       }
-    }
+    )
 
-    return response.body()
+    val data = response.body<DeviceCodeResponse>()
+    return when (data) {
+      is DeviceCodeResponse.Error   -> error("Failed to initiate auth: ${data.content}")
+      is DeviceCodeResponse.Success -> data
+    }
   }
 
 
   private suspend fun waitForAuth(
-    deviceCodeResponse: DeviceCodeResponse,
-  ): AccessStatusResponse.Success {
+    deviceCodeResponse: DeviceCodeResponse.Success,
+  ): AccessStatusResponse.OAuthSuccess {
     print("Waiting for auth to complete...")
     while (true) {
       delay(deviceCodeResponse.interval * 1.1)
       print(".")
 
       when (val auth = checkForAuth(deviceCodeResponse)) {
-        is AccessStatusResponse.Success -> {
+        is AccessStatusResponse.OAuthSuccess -> {
           println()
           println("Received auth token.")
           return auth
@@ -182,82 +224,121 @@ internal class ObtainAuthToken(
 
 
   private suspend fun checkForAuth(
-    deviceCodeResponse: DeviceCodeResponse,
+    deviceCodeResponse: DeviceCodeResponse.Success,
   ): AccessStatusResponse {
-    val response = httpClient.post("https://github.com/login/oauth/access_token") {
-      formData {
+    val response = httpClient.submitForm(
+      "https://github.com/login/oauth/access_token",
+      formParameters = parameters {
         append("client_id", CLIENT_ID)
         append("device_code", deviceCodeResponse.deviceCode)
         append("grant_type", ACCESS_TOKEN_GRANT_TYPE)
       }
-    }
+    )
 
     return response.body()
   }
 }
 
-@Serializable
-@JvmInline
-internal value class GitHubAuthToken(val token: CharSequence)
 
 private const val ACCESS_TOKEN_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code"
-private const val CLIENT_ID = "Iv23liiYfbuggYH28j7O"
+private const val CLIENT_ID = "Ov23liVvsLA8nHywWI8e"
+//private const val CLIENT_ID = "Iv23liiYfbuggYH28j7O"
 
 /**
  *
  */
-@Serializable
-internal data class DeviceCodeResponse internal constructor(
-  /**
-   * The device verification code is 40 characters and used to verify the device.
-   */
-  @SerialName("device_code")
-  val deviceCode: String,
-  @SerialName("user_code")
-  /**
-   * The user verification code is displayed on the device so the user can enter the code in a browser.
-   * This code is 8 characters with a hyphen in the middle.
-   */
-  val userCode: String,
-  @SerialName("verification_uri")
-  /**
-   * The verification URL where users need to enter the user_code: https://github.com/login/device.
-   */
-  val verificationUri: String = "https://github.com/login/device",
-  /**
-   * The number of seconds before the [deviceCode] and [userCode] expire.
-   * The default is 900 seconds or 15 minutes.
-   */
-  @SerialName("expires_in")
-  val expiresInSeconds: Long,
-  /**
-   * The minimum number of seconds that must pass before you can make a new access token request
-   * (`POST https://github.com/login/oauth/access_token`)
-   * to complete the device authorization.
-   *
-   * For example, if the interval is 5, then you cannot make a new request until 5 seconds pass.
-   * If you make more than one request over 5 seconds, then you will hit the rate limit and receive a `slow_down` error.
-   */
-  @SerialName("interval")
-  val intervalSeconds: Long,
-) {
-  val expires: Duration get() = expiresInSeconds.seconds
-  val interval: Duration get() = intervalSeconds.seconds
+@Serializable(with = DeviceCodeResponse.Serializer::class)
+internal sealed interface DeviceCodeResponse {
+
+  @Serializable
+  data class Success internal constructor(
+    /**
+     * The device verification code is 40 characters and used to verify the device.
+     */
+    @SerialName("device_code")
+    val deviceCode: String,
+
+    /**
+     * The user verification code is displayed on the device so the user can enter the code in a browser.
+     * This code is 8 characters with a hyphen in the middle.
+     */
+    @SerialName("user_code")
+    val userCode: String,
+
+    /**
+     * The verification URL where users need to enter the user_code: https://github.com/login/device.
+     */
+    @SerialName("verification_uri")
+    val verificationUri: String = "https://github.com/login/device",
+
+    /**
+     * The number of seconds before the [deviceCode] and [userCode] expire.
+     * The default is 900 seconds or 15 minutes.
+     */
+    @SerialName("expires_in")
+    val expiresInSeconds: Long,
+
+    /**
+     * The minimum number of seconds that must pass before you can make a new access token request
+     * (`POST https://github.com/login/oauth/access_token`)
+     * to complete the device authorization.
+     *
+     * For example, if the interval is 5, then you cannot make a new request until 5 seconds pass.
+     * If you make more than one request over 5 seconds, then you will hit the rate limit and receive a `slow_down` error.
+     */
+    @SerialName("interval")
+    val intervalSeconds: Long,
+  ) : DeviceCodeResponse {
+    val expires: Duration get() = expiresInSeconds.seconds
+    val interval: Duration get() = intervalSeconds.seconds
+  }
+
+  @JvmInline
+  @Serializable
+  value class Error internal constructor(
+    val content: JsonObject,
+  ) : DeviceCodeResponse
+
+  object Serializer : JsonContentPolymorphicSerializer<DeviceCodeResponse>(DeviceCodeResponse::class) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<DeviceCodeResponse> {
+      return if (element !is JsonObject || "error" in element) {
+        Error.serializer()
+      } else {
+        Success.serializer()
+      }
+    }
+  }
 }
 
 
-@Serializable
+@Serializable(with = AccessStatusResponse.Serializer::class)
 internal sealed class AccessStatusResponse() {
+
+//  @Serializable
+//  internal data class AppSuccess internal constructor(
+//    @SerialName("access_token")
+//    val accessToken: GitHubAuthToken,
+//    @SerialName("expires_in")
+//    val expiresIn: Long,
+//    @SerialName("refresh_token")
+//    val refreshToken: String,
+//    @SerialName("refresh_token_expires_in")
+//    val refreshTokenExpiresIn: Long,
+//    @SerialName("token_type")
+//    val tokenType: String,
+//    val scope: String,
+//  ) : AccessStatusResponse()
+
   @Serializable
-  internal data class Success internal constructor(
+  internal data class OAuthSuccess internal constructor(
     @SerialName("access_token")
     val accessToken: GitHubAuthToken,
-    @SerialName("expires_in")
-    val expiresIn: Long,
-    @SerialName("refresh_token")
-    val refreshToken: String,
-    @SerialName("refresh_token_expires_in")
-    val refreshTokenExpiresIn: Long,
+//    @SerialName("expires_in")
+//    val expiresIn: Long,
+//    @SerialName("refresh_token")
+//    val refreshToken: String,
+//    @SerialName("refresh_token_expires_in")
+//    val refreshTokenExpiresIn: Long,
     @SerialName("token_type")
     val tokenType: String,
     val scope: String,
@@ -336,42 +417,9 @@ internal sealed class AccessStatusResponse() {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<AccessStatusResponse> {
       return when {
         element is JsonObject && "error" in element -> Error.serializer()
-        else                                        -> Success.serializer()
+//        else                                        -> Success.serializer()
+        else                                        -> OAuthSuccess.serializer()
       }
     }
   }
 }
-
-
-internal data class asd(
-  /**
-   * The user access token. The token starts with `ghu_`.
-   */
-  @SerialName("access_token")
-  val accessToken: String,
-  /**
-   * The number of seconds until [accessToken] expires. If you disabled expiration of user access tokens, this parameter will be omitted. The value will always be 28800 (8 hours). */
-  @SerialName("expires_in")
-  val expiresIn: Int,
-  /**
-   * The refresh token.
-   * If you disabled expiration of user access tokens, this parameter will be omitted. The token starts with `ghr_`. */
-  @SerialName("refresh_token")
-  val refreshToken: String,
-  /** The number of seconds until refresh_token expires. If you disabled expiration of user access tokens, this parameter will be omitted. The value will always be 15897600 (6 months). */
-  @SerialName("refresh_token_expires_in")
-  val refreshTokenExpiresIn: Integer,
-  /** The scopes that the token has. This value will always be an empty string. Unlike a traditional OAuth token, the user access token is limited to the permissions that both your app and the user have. */
-  val scope: String,
-  /** The type of token. The value will always be `bearer`. */
-  @SerialName("token_type")
-  val tokenType: String,
-)
-
-@Serializable
-internal data class StoredTokenData internal constructor(
-  val accessToken: GitHubAuthToken,
-  val accessTokenExpiresAt: Instant,
-  val refreshToken: String,
-  val refreshTokenExpiresAt: Instant,
-)

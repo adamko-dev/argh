@@ -25,6 +25,7 @@ apacheMaven-model = { module = "org.apache.maven:maven-model", version.ref = "ap
 apacheMaven-modelBuilder = { module = "org.apache.maven:maven-model-builder", version.ref = "apacheMaven-core" }
 
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 
 ktorClient-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
@@ -32,6 +33,7 @@ ktorClient-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
 ktorClient-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor" }
 ktorClient-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktorClient-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktorClient-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 
 
 ktorSerialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }

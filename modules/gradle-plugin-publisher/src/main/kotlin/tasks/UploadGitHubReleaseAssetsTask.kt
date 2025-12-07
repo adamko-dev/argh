@@ -55,16 +55,17 @@ internal constructor(
   }
 
   private fun preflightChecks() {
-    // - check if publication `group` can be mapped to `github-org/github-repo-name`
-    // - check if gh cli is installed
-    // - check if gh cli is authenticated
-    // - check if gh cli has access to GitHub repo
-    // - check the release version is valid and consistent
-    //   across all GMM module files
-    // - check the release group is valid and consistent
-    //   across all GMM module files
-    // - check if repo already has release
-    // - check if preparedFiles does not contain subdirectories
+    // TODO
+    //   - Check if publication `group` can be mapped to `github-org/github-repo-name`.
+    //   - Check if gh cli is installed.
+    //   - Check if gh cli is authenticated.
+    //   - Check if gh cli has access to GitHub repo.
+    //   - Check the release version is valid and consistent across all GMM module files.
+    //   - Check the release group is valid and consistent across all GMM module files.
+    //   - Check if repo already has release.
+    //   - Check if preparedFiles does not contain subdirectories.
+    //   - Check if GitHub token is present and valid,
+    //     otherwise, direct user to run 'init GitHub auth token' task, or set GITHUB_TOKEN env var.
   }
 
   private fun upload() {
