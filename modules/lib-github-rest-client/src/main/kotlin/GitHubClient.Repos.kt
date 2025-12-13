@@ -1,5 +1,6 @@
 package dev.adamko.githubapiclient
 
+import dev.adamko.githubapiclient.endpoints.PaginatedRoute
 import dev.adamko.githubapiclient.endpoints.repos.*
 import dev.adamko.githubapiclient.endpoints.repos.CreateRelease.RequestBody.MakeLatest
 import dev.adamko.githubapiclient.model.RepoRelease
@@ -23,45 +24,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 
-
-/**
- * ### Get a release
- *
- * Gets a public release with the specified release ID.
- *
- * > [!NOTE]
- * > This returns an `upload_url` key corresponding to the endpoint for uploading release assets.
- * This key is a hypermedia resource.
- * For more information, see
- * "[Getting started with the REST API](https://docs.github.com/rest/using-the-rest-api/getting-started-with-the-rest-api#hypermedia)."
- *
- * `repos/get-release`
- */
-suspend fun GitHubClient.Repos.getRelease(
-  owner: String,
-  repo: String,
-  releaseId: Int,
-): GetRelease.ResponseBody {
-  val resource = GetRelease.Route(
-    owner = owner,
-    repo = repo,
-    releaseId = releaseId,
-  )
-  return httpClient.get(resource = resource).body()
-}
-
 /**
  * ### Get a release asset
  *
- * To download the asset's binary content:
- *
- * - If within a browser, fetch the location specified in the `browser_download_url` key provided in the response.
- * - Alternatively, set the `Accept` header of the request to
- *   [`application/octet-stream`](https://docs.github.com/rest/using-the-rest-api/getting-started-with-the-rest-api#media-types).
- *   The API will either redirect the client to the location, or stream it directly if possible.
- *   API clients should handle both a `200` or `302` response.
- *
- * `repos/get-release-asset`
+ * To download the asset's binary content use [downloadReleaseAsset].
  */
 suspend fun GitHubClient.Repos.getReleaseAsset(
   owner: String,
@@ -116,54 +82,6 @@ suspend fun GitHubClient.Repos.deleteReleaseAsset(
     assetId = assetId,
   )
   httpClient.delete(resource)
-}
-
-/**
- * ### Get a release by tag name
- *
- * Get a published release with the specified tag.
- *
- * `repos/get-release-by-tag`
- */
-suspend fun GitHubClient.Repos.getReleaseByTag(
-  owner: String,
-  repo: String,
-  tag: String,
-): GetReleaseByTag.ResponseBody {
-  val resource = GetReleaseByTag.Route(
-    owner = owner,
-    repo = repo,
-    tag = tag,
-  )
-  val response = httpClient.get(resource = resource)
-  return response.body()
-}
-
-/**
- * ### Get a release by tag name
- *
- * Get a published release with the specified tag.
- *
- * Returns `null` if the release does not exist.
- *
- * `repos/get-release-by-tag`
- */
-suspend fun GitHubClient.Repos.getReleaseByTagOrNull(
-  owner: String,
-  repo: String,
-  tag: String,
-): GetReleaseByTag.ResponseBody? {
-  val resource = GetReleaseByTag.Route(
-    owner = owner,
-    repo = repo,
-    tag = tag,
-  )
-  val response = httpClient.get(resource = resource)
-  return if (response.status == HttpStatusCode.NotFound) {
-    null
-  } else {
-    response.body()
-  }
 }
 
 
@@ -272,32 +190,6 @@ suspend fun GitHubClient.Repos.uploadReleaseAsset(
 }
 
 
-///**
-// * ## List release assets
-// *
-// * @param[perPage]
-// * The number of results per page (max 100).
-// * For more information, see
-// * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
-// */
-//private suspend fun GitHubClient.Repos.listReleaseAssets(
-//  owner: String,
-//  repo: String,
-//  releaseId: Int,
-//  perPage: Int? = null,
-//  page: Int? = null,
-//): ListReleaseAssets.ResponseBody {
-//  val resource = ListReleaseAssets.Route(
-//    owner = owner,
-//    repo = repo,
-//    releaseId = releaseId,
-//    perPage = perPage,
-//    page = page,
-//  )
-//  val response = httpClient.get(resource = resource)
-//  return response.body()
-//}
-
 /**
  * ## List release assets
  *
@@ -311,73 +203,55 @@ fun GitHubClient.Repos.listAllReleaseAssets(
   repo: String,
   releaseId: Int,
   perPage: Int? = null,
-  page: Int = 1,
-): Flow<RepoReleaseAsset> {
-  var page = page
-  return flow {
-    do {
-      val resource = ListReleaseAssets.Route(
-        owner = owner,
-        repo = repo,
-        releaseId = releaseId,
-        perPage = perPage,
-        page = page++,
-      )
-      val response = httpClient.get(resource = resource)
-
-      val assets: ListReleaseAssets.ResponseBody = response.body()
-
-      if (assets.isEmpty()) break
-
-      assets.forEach { asset ->
-        emit(asset)
-      }
-
-      val linkHeader = response.headers["link"].orEmpty()
-      val hasNext = "rel=\"next\"" in linkHeader
-      if (!hasNext) break
-
-    } while (currentCoroutineContext().isActive)
-  }
-}
-
-
-suspend fun GitHubClient.Repos.listReleases(
-  owner: String,
-  repo: String,
-  perPage: Int? = null,
   page: Int? = null,
-): ListReleases.ResponseBody {
-  val resource = ListReleases.Route(
-    owner = owner,
-    repo = repo,
-    perPage = perPage,
-    page = page,
-  )
-  val response = httpClient.get(resource = resource)
-  return response.body()
-}
+): Flow<RepoReleaseAsset> =
+  paginatedResponses(page = page) { page ->
+    ListReleaseAssets.Route(
+      owner = owner,
+      repo = repo,
+      releaseId = releaseId,
+      perPage = perPage,
+      page = page,
+    )
+  }
 
 
 fun GitHubClient.Repos.listAllReleases(
   owner: String,
   repo: String,
   perPage: Int? = null,
-  page: Int = 1,
-): Flow<RepoRelease> {
-  var page = page
-  return flow {
-    do {
-      val releases = listReleases(
-        owner = owner,
-        repo = repo,
-        perPage = perPage,
-        page = page++,
-      )
-      if (releases.isEmpty()) break
-      releases.forEach { asset ->
-        emit(asset)
-      }
-    } while (currentCoroutineContext().isActive)
+  page: Int? = null,
+): Flow<RepoRelease> =
+  paginatedResponses(page = page) { page ->
+    ListReleases.Route(
+      owner = owner,
+      repo = repo,
+      perPage = perPage,
+      page = page,
+    )
   }
+
+
+private inline fun <reified T : Any, reified R : PaginatedRoute> GitHubClient.Repos.paginatedResponses(
+  page: Int? = null,
+  crossinline routeProvider: (page: Int) -> R,
+): Flow<T> = flow {
+  var page = page ?: 1
+  do {
+    val route: R = routeProvider(page++)
+    val response = httpClient.get(resource = route)
+
+    val elements: List<T> = response.body()
+
+    if (elements.isEmpty()) break
+
+    elements.forEach { element ->
+      emit(element)
+    }
+
+    val linkHeader = response.headers["link"].orEmpty()
+    val hasNext = "rel=\"next\"" in linkHeader
+    if (!hasNext) break
+
+  } while (currentCoroutineContext().isActive)
 }

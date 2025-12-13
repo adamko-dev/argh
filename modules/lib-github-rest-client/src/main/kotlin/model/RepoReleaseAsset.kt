@@ -3,7 +3,9 @@ package dev.adamko.githubapiclient.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** Data related to a release. */
+/**
+ * Data related to an asset attached to a release.
+ */
 @Serializable
 data class RepoReleaseAsset internal constructor(
   val id: Long,

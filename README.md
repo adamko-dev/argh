@@ -1,9 +1,3 @@
-# GitHub Asset Publish
+# Argh (Asset Release for GitHub)
 
-Publish Gradle modules as GitHub Release Assets.
-
-
-<!--
-GitHub Shipyard Publisher
-Ghastly (GitHub ASseT L..Y...)
--->
+Publish Gradle/Maven libraries to GitHub Release Assets.

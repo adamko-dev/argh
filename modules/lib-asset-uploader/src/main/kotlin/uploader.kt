@@ -21,8 +21,7 @@ suspend fun main(args: Array<String>) {
 
   1. Get the version of the release.
   2. Check if the GitHub repo has a compatible release.
-  3. Check if the release already has files.
-     - FAIL: if not snapshot version and files already exist
+  3. If a release exists, delete already attached files.
   4. Upload assets to the release.
   5. If snapshot version, delete old files.
    */
@@ -70,7 +69,7 @@ private suspend fun checkGitHubClientScope(gh: GitHubClient) {
 }
 
 /**
- * Limited parallel upload of release assets.
+ * Limited parallel upload and download of release assets.
  */
 private val releaseAssetDispatcher: CoroutineDispatcher =
   Dispatchers.IO.limitedParallelism(10)
@@ -80,8 +79,6 @@ private data class FilesToUploadWithMetadata(
   val repo: String,
   /** Version of the release */
   val version: String,
-//  /** Whether this is a snapshot version */
-//  val isSnapshot: Boolean,
   /** Directory containing all files to upload. */
   val releaseDir: Path,
 ) {
@@ -113,6 +110,8 @@ private suspend fun upload(
   // Upload new files
   println("Uploading files to release ${ghRelease.id}, $version...")
 
+  // TODO validate Release does not already have asset with the same name
+
   srcRelease.releaseDir.useDirectoryEntries { srcFiles ->
     srcFiles.forEach { srcFile ->
       launch(releaseAssetDispatcher) {
@@ -134,6 +133,13 @@ private suspend fun upload(
   // TODO validate checksum of uploaded files
 }
 
+/**
+ * If the release is NOT immutable and is a draft or prerelease then...
+ * 1. Fetch the attached module files (if any).
+ * 2. Find associated files (by module filename prefix).
+ * 3. Delete the attached assets.
+ */
+// TODO don't delete if an attached asset is identical to an asset that should be uploaded
 private suspend fun handleExistingReleaseAssets(
   gh: GitHubClient,
   owner: String,
@@ -141,12 +147,6 @@ private suspend fun handleExistingReleaseAssets(
   ghRelease: RepoRelease,
   existingAssets: List<RepoReleaseAsset>
 ): Unit = coroutineScope block@{
-  // if the release is a draft or prerelease then...
-  // 1. Fetch the attached module files (if any).
-  // 2. Find associated files (by module filename prefix).
-  // 3. Delete the attached assets.
-  if (!ghRelease.draft) return@block
-
   val deletedAssets = mutableListOf<RepoReleaseAsset>()
 
   val moduleAssets = existingAssets
@@ -193,40 +193,40 @@ private suspend fun getOrCreateRelease(
   isSnapshot: Boolean,
   createNewReleaseIfMissing: Boolean,
 ): RepoRelease {
-  val result =
+  val ghRelease =
     gh.repos.listAllReleases(
       owner = owner,
       repo = repo,
       perPage = 100,
     ).firstOrNull { it.tagName == version }
 
-  if (result != null) {
+  if (ghRelease != null) {
 
     // Check if the release already has files
     val existingFiles: List<RepoReleaseAsset> =
       gh.repos.listAllReleaseAssets(
         owner = owner,
         repo = repo,
-        releaseId = result.id,
+        releaseId = ghRelease.id,
         perPage = 100,
       ).toList()
 
-    // TODO if the release is a draft or prerelease then...
-    //      1. fetch the attached module files (if any)
-    //      2. extract the artifacts (and metadata files).
-    //      3. delete the attached files.
-    //      Until then, just abort early.
-    if (existingFiles.isNotEmpty()) {
+    if (
+      !ghRelease.draft
+      && !ghRelease.prerelease
+      && ghRelease.immutable != true
+      && existingFiles.isNotEmpty()
+    ) {
       handleExistingReleaseAssets(
         gh = gh,
         owner = owner,
         repo = repo,
-        ghRelease = result,
+        ghRelease = ghRelease,
         existingAssets = existingFiles,
       )
     }
 
-    return result
+    return ghRelease
   }
 
   if (createNewReleaseIfMissing) {
@@ -241,17 +241,4 @@ private suspend fun getOrCreateRelease(
   } else {
     error("Release $version does not exist and createNewReleaseIfMissing is false.")
   }
-//  if (gh.repos.getReleaseByTagOrNull(owner = owner, repo = repo, tag = version) == null) {
-//    if (createNewReleaseIfMissing) {
-//      println("Creating new release $version...")
-//      val result = gh.repos.createRelease(
-//        owner = owner,
-//        repo = repo,
-//        tagName = version,
-//      )
-//      println(result)
-//    } else {
-//      error("Release $version does not exist and createNewReleaseIfMissing is false.")
-//    }
-//  }
 }

@@ -17,5 +17,5 @@ data class ReactionRollup internal constructor(
   val heart: Long,
   val hooray: Long,
   val eyes: Long,
-  val rocket: Long
+  val rocket: Long,
 )

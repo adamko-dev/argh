@@ -10,7 +10,7 @@ import java.nio.file.Path
 
 class GitHubClient(
   tokenDataFile: Path,
-  internal val httpClient: HttpClient = defaultHttpClient,
+  internal val httpClient: HttpClient = defaultHttpClient(),
 ) : AutoCloseable {
 
   private val authTokenStore = AuthTokenStore(tokenDataFile)

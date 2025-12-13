@@ -239,35 +239,6 @@ class GppTest {
       }
       .toList()
 
-//    buildList {
-//      listOf(
-//        "",
-//        "-js",
-//        "-linuxX64",
-//      ).forEach { variant ->
-//        listOf(
-//          "sources.jar",
-//          ".jar",
-//          ".klib",
-//          ".module",
-//          ".pom",
-//        ).forEach { artifact ->
-//          add("test-project$variant-$projectVersion-$artifact")
-//          if (variant == "") {
-//            add("test-project$variant-$projectVersion.ivy.xml")
-//          }
-//          listOf(
-//            ".sha256",
-//          ).forEach { checksum ->
-//            add("test-project$variant-$projectVersion-$artifact$checksum")
-//            if (variant == "") {
-//              add("test-project$variant-$projectVersion.ivy.xml$checksum")
-//            }
-//          }
-//        }
-//      }
-//    }
-
     assertLinesMatch(
       listOf(
         "test-project-$projectVersion-sources.jar",
