@@ -34,21 +34,24 @@ suspend fun main(args: Array<String>) {
 
 
   /** `OWNER/REPO` */
-  val githubRepo = getArg("githubRepo")
+  val gitHubRepo = getArg("gitHubRepo")
+  val gitHubOAuthToken = getArg("gitHubOAuthToken")
   val releaseVersion = getArg("releaseVersion")
   val releaseDir = getArg("releaseDir").let(::Path)
   val pluginCacheDir = getArg("pluginCacheDir").let(::Path)
   val createNewReleaseIfMissing = getArg("createNewReleaseIfMissing").toBoolean()
 
   val tokenDataFile = pluginCacheDir.resolve("gh-token.json")
+
   val gh = GitHubClient(
-    tokenDataFile = tokenDataFile
+    tokenDataFile = tokenDataFile,
+    gitHubOAuthToken = gitHubOAuthToken,
   )
 
   checkGitHubClientScope(gh)
 
   val release = FilesToUploadWithMetadata(
-    repo = githubRepo,
+    repo = gitHubRepo,
     version = releaseVersion,
     releaseDir = releaseDir,
   )

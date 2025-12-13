@@ -10,11 +10,15 @@ import java.nio.file.Path
 
 class GitHubClient(
   tokenDataFile: Path,
+  gitHubOAuthToken: String,
   internal val httpClient: HttpClient = defaultHttpClient(),
 ) : AutoCloseable {
 
   private val authTokenStore = AuthTokenStore(tokenDataFile)
-  private val obtainAuthToken = ObtainAuthToken(authTokenStore)
+  private val obtainAuthToken = ObtainAuthToken(
+    authTokenStore,
+    gitHubOAuthToken,
+  )
 
   init {
     httpClient.plugin(HttpSend).intercept { request ->

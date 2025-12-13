@@ -14,7 +14,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Named(githubAssetsRepo)
-class GhaRepositoryConnectorFactory
+class ArghRepositoryConnectorFactory
 @Inject
 constructor(
   private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
@@ -29,7 +29,7 @@ constructor(
     if (repository.contentType != GitHubAssetsContentType) {
       throw NoRepositoryConnectorException(repository)
     }
-    return GhaRepositoryConnector(
+    return ArghRepositoryConnector(
       session,
       repository,
       checksumAlgorithmFactorySelector,

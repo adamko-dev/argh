@@ -29,7 +29,12 @@ class GppTest {
       |
       |pluginManagement {
       |  repositories {
-      |    maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |    exclusiveContent { 
+      |      forRepository {
+      |        maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |      }
+      |      filter { includeGroupAndSubgroups("dev.adamko.argh") }
+      |    }
       |    mavenCentral()
       |    gradlePluginPortal()
       |  }
@@ -38,7 +43,12 @@ class GppTest {
       |dependencyResolutionManagement {
       |  repositoriesMode = RepositoriesMode.PREFER_SETTINGS
       |  repositories {
-      |    maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |    exclusiveContent { 
+      |      forRepository {
+      |        maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |      }
+      |      filter { includeGroupAndSubgroups("dev.adamko.argh") }
+      |    }
       |    mavenCentral()
       |    gradlePluginPortal()
       |  }
@@ -51,7 +61,6 @@ class GppTest {
       |plugins {
       |  `java-library`
       |  id("dev.adamko.argh.publisher") version "+"
-      |  `maven-publish`
       |}
       |
       |group = "aSemy.demo-github-asset-publish-repo"
@@ -70,8 +79,8 @@ class GppTest {
       |  withSourcesJar()
       |}
       |
-      |tasks.withType<dev.adamko.argh.gradle.publisher.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
-      |  githubRepo.set("aSemy/demo-github-asset-publish-repo")
+      |arghPublisher {
+      |  gitHubRepo.set("aSemy/demo-github-asset-publish-repo")
       |}
       |""".trimMargin()
     )
@@ -151,7 +160,12 @@ class GppTest {
       |
       |pluginManagement {
       |  repositories {
-      |    maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |    exclusiveContent { 
+      |      forRepository {
+      |        maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |      }
+      |      filter { includeGroupAndSubgroups("dev.adamko.argh") }
+      |    }
       |    mavenCentral()
       |    gradlePluginPortal()
       |  }
@@ -160,7 +174,12 @@ class GppTest {
       |dependencyResolutionManagement {
       |  repositoriesMode = RepositoriesMode.PREFER_SETTINGS
       |  repositories {
-      |    maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |    exclusiveContent { 
+      |      forRepository {
+      |        maven(file("${devMavenRepo.invariantSeparatorsPathString}"))
+      |      }
+      |      filter { includeGroupAndSubgroups("dev.adamko.argh") }
+      |    }
       |    mavenCentral()
       |    gradlePluginPortal()
       |  }
@@ -173,7 +192,6 @@ class GppTest {
       |plugins {
       |  kotlin("multiplatform") version "2.2.21"
       |  id("dev.adamko.argh.publisher") version "+"
-      |  `maven-publish`
       |}
       |
       |group = "aSemy.demo-github-asset-publish-repo"
@@ -185,8 +203,8 @@ class GppTest {
       |  linuxX64()
       |}
       |
-      |tasks.withType<dev.adamko.argh.gradle.publisher.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
-      |  githubRepo.set("aSemy/demo-github-asset-publish-repo")
+      |arghPublisher {
+      |  gitHubRepo.set("aSemy/demo-github-asset-publish-repo")
       |}
       |
       |val javadocJarStub by tasks.registering(Jar::class) {

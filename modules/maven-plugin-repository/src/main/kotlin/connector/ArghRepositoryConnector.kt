@@ -1,6 +1,6 @@
 package dev.adamko.argh.maven.repository.connector
 
-import dev.adamko.argh.maven.repository.layout.GhaRepositoryLayout
+import dev.adamko.argh.maven.repository.layout.ArghRepositoryLayout
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.URI
@@ -25,14 +25,14 @@ import org.eclipse.aether.transfer.TransferResource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-internal class GhaRepositoryConnector(
+internal class ArghRepositoryConnector(
   private val session: RepositorySystemSession,
   private val repository: RemoteRepository,
   private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
 ) : RepositoryConnector {
   private val logger: Logger = LoggerFactory.getLogger(javaClass)
 
-  private val layout: RepositoryLayout = GhaRepositoryLayout(
+  private val layout: RepositoryLayout = ArghRepositoryLayout(
 //    "gh-assets"
     checksumAlgorithmFactorySelector = checksumAlgorithmFactorySelector,
   )

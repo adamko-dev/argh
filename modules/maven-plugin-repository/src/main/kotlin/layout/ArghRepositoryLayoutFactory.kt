@@ -11,7 +11,7 @@ import org.eclipse.aether.spi.connector.layout.RepositoryLayoutFactory
 import org.eclipse.aether.transfer.NoRepositoryLayoutException
 
 @Named(GitHubAssetsContentType)
-class GhaRepositoryLayoutFactory
+class ArghRepositoryLayoutFactory
 @Inject
 internal constructor(
   private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
@@ -25,7 +25,7 @@ internal constructor(
       throw NoRepositoryLayoutException(repository)
     }
 
-    return GhaRepositoryLayout(
+    return ArghRepositoryLayout(
       checksumAlgorithmFactorySelector,
     )
   }

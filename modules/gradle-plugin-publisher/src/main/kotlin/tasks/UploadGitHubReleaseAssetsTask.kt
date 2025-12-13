@@ -1,5 +1,6 @@
 package dev.adamko.argh.gradle.publisher.tasks
 
+import dev.adamko.argh.gradle.publisher.config.GitHubOAuthTokenSource
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
@@ -19,7 +20,7 @@ internal constructor(
 ) : DefaultTask() {
 
   @get:Input
-  abstract val githubRepo: Property<String>
+  abstract val gitHubRepo: Property<String>
 
   @get:Input
   abstract val createNewReleaseIfMissing: Property<Boolean>
@@ -46,6 +47,9 @@ internal constructor(
 
   @get:Input
   abstract val releaseVersion: Property<String>
+
+  @get:Internal
+  abstract val gitHubOAuthToken: Property<GitHubOAuthTokenSource>
 
   @TaskAction
   protected fun taskAction() {
@@ -79,11 +83,17 @@ internal constructor(
       spec.classpath(runtimeClasspath.files)
       spec.args(
         buildList {
-          add("githubRepo=${githubRepo.get()}")
+          add("gitHubRepo=${gitHubRepo.get()}")
           add("releaseVersion=${releaseVersion.get()}")
           add("createNewReleaseIfMissing=${createNewReleaseIfMissing.get()}")
           add("releaseDir=${preparedAssetsDir.get().asFile.invariantSeparatorsPath}")
           add("pluginCacheDir=${pluginCacheDir.get().asFile.invariantSeparatorsPath}")
+          add(
+            "gitHubOAuthToken=" +
+                when (gitHubOAuthToken.get()) {
+                  GitHubOAuthTokenSource.EnvVar -> "EnvVar"
+                }
+          )
         }
       )
     }

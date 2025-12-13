@@ -11,7 +11,7 @@ import org.eclipse.aether.spi.connector.layout.RepositoryLayout.ChecksumLocation
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class GhaRepositoryLayout(
+class ArghRepositoryLayout(
   private val checksumAlgorithmFactorySelector: ChecksumAlgorithmFactorySelector
 ) : RepositoryLayout {
   private val logger: Logger = LoggerFactory.getLogger(javaClass)

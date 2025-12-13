@@ -2,6 +2,7 @@
 
 package dev.adamko.argh.gradle.publisher
 
+import dev.adamko.argh.gradle.publisher.config.GitHubOAuthTokenSource
 import dev.adamko.argh.gradle.publisher.internal.PluginCacheDirSource.Companion.pluginCacheDirSource
 import dev.adamko.argh.gradle.publisher.internal.UploadReleaseDependencies
 import dev.adamko.argh.gradle.publisher.tasks.PrepareGitHubReleaseFilesTask
@@ -16,10 +17,9 @@ import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.plugins.MavenPublishPlugin
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.publish.plugins.PublishingPlugin
-import org.gradle.api.tasks.Delete
 import org.gradle.kotlin.dsl.*
 
-abstract class GitHubAssetPublishPlugin
+abstract class ArghPublishPlugin
 @Inject
 internal constructor(
   private val providers: ProviderFactory,
@@ -29,27 +29,31 @@ internal constructor(
 
   override fun apply(project: Project) {
 
-    val gapExtension = createExtension(project)
+    val arghExtension = createExtension(project)
 
     project.pluginManager.apply(MavenPublishPlugin::class)
 
     val publishing = project.extensions.getByType<PublishingExtension>()
 
-    configureTaskConventions(project, gapExtension)
+    configureTaskConventions(project, arghExtension)
 
-    publishing.repositories.maven(gapExtension.stagingRepoDir) {
-      name = gapExtension.stagingRepoName
+    publishing.repositories.maven(arghExtension.stagingRepoDir) {
+      name = arghExtension.stagingRepoName
     }
 
-    val cleanBuildDirMavenRepoDir by project.tasks.registering(Delete::class) {
-      delete(gapExtension.stagingRepoDir)
+    val cleanBuildDirMavenRepoDir by project.tasks.registering {
+      val stagingRepoDir = arghExtension.stagingRepoDir
+      destroyables.register(stagingRepoDir)
+      doLast {
+        stagingRepoDir.get().asFile.deleteRecursively()
+      }
     }
 
     val buildDirPublishTasks =
       project.tasks
         .withType<PublishToMavenRepository>()
         .matching { task ->
-          task.name.endsWith("PublicationToGitHubAssetPublishStagingRepository")
+          task.name.endsWith("PublicationTo${arghExtension.stagingRepoName}Repository")
         }
 
     buildDirPublishTasks.configureEach { task ->
@@ -59,7 +63,7 @@ internal constructor(
     val prepareAssetsTask by project.tasks.registering(PrepareGitHubReleaseFilesTask::class) {
       group = PublishingPlugin.PUBLISH_TASK_GROUP
       dependsOn(buildDirPublishTasks)
-      stagingMavenRepo.convention(gapExtension.stagingRepoDir)
+      stagingMavenRepo.convention(arghExtension.stagingRepoDir)
     }
 
     val uploadGitHubReleaseAssets by project.tasks.registering(UploadGitHubReleaseAssetsTask::class) {
@@ -70,10 +74,10 @@ internal constructor(
     }
   }
 
-  private fun createExtension(project: Project): GitHubAssetPublishExtension {
-    return project.extensions.create<GitHubAssetPublishExtension>("gitHubAssetPublish").apply {
-      gapBuildDir.convention(project.layout.buildDirectory.dir("github-asset-publish"))
-      stagingRepoDir.convention(gapBuildDir.dir("staging-repo"))
+  private fun createExtension(project: Project): ArghPublishExtension {
+    return project.extensions.create<ArghPublishExtension>("arghPublisher").apply {
+      baseBuildDir.convention(project.layout.buildDirectory.dir("argh-publish"))
+      stagingRepoDir.convention(baseBuildDir.dir("staging-repo"))
       artifactMetadataExtensions.convention(
         setOf(
           "sha256",
@@ -86,12 +90,13 @@ internal constructor(
             providers.pluginCacheDirSource().map { it.toFile() }
           )
       )
+      gitHubOAuthToken.convention(GitHubOAuthTokenSource.EnvVar)
     }
   }
 
   private fun configureTaskConventions(
     project: Project,
-    gapExtension: GitHubAssetPublishExtension,
+    arghExtension: ArghPublishExtension,
   ) {
     val uploadReleaseDependencies = UploadReleaseDependencies(project)
 
@@ -100,16 +105,17 @@ internal constructor(
       task.destinationDirectory.convention(
         layout.dir(providers.provider { task.temporaryDir })
       )
-      task.artifactMetadataExtensions.convention(gapExtension.artifactMetadataExtensions)
+      task.artifactMetadataExtensions.convention(arghExtension.artifactMetadataExtensions)
     }
 
     project.tasks.withType<UploadGitHubReleaseAssetsTask>().configureEach { task ->
       task.createNewReleaseIfMissing.convention(true)
       task.runtimeClasspath.from(uploadReleaseDependencies.resolver)
-      task.githubRepo.convention(gapExtension.githubRepo)
+      task.gitHubRepo.convention(arghExtension.gitHubRepo)
       task.skipGitHubUpload.convention(false)
       task.releaseVersion.convention(providers.provider { project.version.toString() })
-      task.pluginCacheDir.convention(gapExtension.pluginCacheDir)
+      task.pluginCacheDir.convention(arghExtension.pluginCacheDir)
+      task.gitHubOAuthToken.convention(arghExtension.gitHubOAuthToken)
     }
   }
 }

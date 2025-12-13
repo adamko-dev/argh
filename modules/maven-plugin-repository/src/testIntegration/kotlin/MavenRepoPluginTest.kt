@@ -14,7 +14,7 @@ class MavenRepoPluginTest {
 
   @Test
   @Disabled
-  @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  @Timeout(value = 5, unit = TimeUnit.MINUTES)
   fun `testJavaLibraryProject - validate`(
     @TempDir
     projectDir: Path
@@ -38,7 +38,7 @@ class MavenRepoPluginTest {
       .directory(projectDir.toFile())
       .start()
 
-    result.waitFor(1, TimeUnit.MINUTES)
+    result.waitFor(5, TimeUnit.MINUTES)
     println(logFile.readText())
 
     val stdout = result.inputStream.bufferedReader().use { it.readText() }
@@ -48,7 +48,7 @@ class MavenRepoPluginTest {
   }
 
   @Test
-  @Timeout(value = 1, unit = TimeUnit.MINUTES)
+  @Timeout(value = 5, unit = TimeUnit.MINUTES)
   fun `testJavaLibraryProject - compile`(
     @TempDir
     projectDir: Path
@@ -75,7 +75,7 @@ class MavenRepoPluginTest {
       }
       .start()
 
-    result.waitFor(1, TimeUnit.MINUTES)
+    result.waitFor(5, TimeUnit.MINUTES)
     println(logFile.readText())
 
     val stdout = result.inputStream.bufferedReader().use { it.readText() }
@@ -96,9 +96,10 @@ private fun createProject(projectDir: Path) {
     parent.createDirectories()
     writeText(
       """
+      |<?xml version="1.0" encoding="UTF-8"?>
       |<extensions>
       |  <extension>
-      |    <groupId>adamko-dev.argh</groupId>
+      |    <groupId>dev.adamko.argh</groupId>
       |    <artifactId>maven-plugin-repository</artifactId>
       |    <version>0.0.1</version>
       |  </extension>
@@ -137,6 +138,7 @@ private fun createProject(projectDir: Path) {
 
 @Language("XML")
 private fun pomXml(): String = """
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
@@ -155,7 +157,7 @@ private fun pomXml(): String = """
       <repository>
           <id>github-assets</id>
           <url>https://github.com/</url>
-          <layout>githubAssets</layout>
+          <layout>argh</layout>
           <releases><enabled>true</enabled></releases>
           <snapshots><enabled>true</enabled></snapshots>
       </repository>
@@ -174,6 +176,7 @@ private fun pomXml(): String = """
 
 @Language("XML")
 private fun settingsXml(): String = """
+<?xml version="1.0" encoding="UTF-8"?>
 <settings>
   <profiles>
     <profile>

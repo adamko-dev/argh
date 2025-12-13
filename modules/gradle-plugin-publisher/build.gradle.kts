@@ -15,7 +15,7 @@ gradlePlugin {
   plugins {
     register("GitHubAssetPublish") {
       id = "dev.adamko.argh.publisher"
-      implementationClass = "dev.adamko.argh.gradle.publisher.GitHubAssetPublishPlugin"
+      implementationClass = "dev.adamko.argh.gradle.publisher.ArghPublishPlugin"
     }
   }
 }

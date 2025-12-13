@@ -9,7 +9,7 @@ gradlePlugin {
   plugins {
     register("githubAssetRepository") {
       id = "dev.adamko.argh.repository"
-      implementationClass = "dev.adamko.argh.repository.GitHubAssetRepositoryPlugin"
+      implementationClass = "dev.adamko.argh.gradle.repository.ArghRepositoryPlugin"
     }
   }
 }

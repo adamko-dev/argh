@@ -14,7 +14,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import java.util.concurrent.ConcurrentHashMap
-import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -29,6 +28,7 @@ import kotlinx.serialization.json.JsonObject
 
 internal class ObtainAuthToken(
   private val authTokenStore: AuthTokenStore,
+  private val gitHubOAuthToken: String,
   private val httpClient: HttpClient = HttpClient(CIO) {
     defaultRequest {
       accept(ContentType.Application.Json)
@@ -55,7 +55,10 @@ internal class ObtainAuthToken(
    */
   suspend fun action(): GitHubAuthToken = lock.withLock {
 
-    val envToken = System.getenv("GITHUB_TOKEN")
+    val envToken = when (gitHubOAuthToken) {
+      "EnvVar" -> System.getenv("GITHUB_TOKEN")
+      else -> null
+    }
     if (envToken != null) {
       return GitHubAuthToken(envToken)
     }

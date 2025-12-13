@@ -7,7 +7,7 @@ import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
 import org.gradle.api.plugins.PluginAware
 
-abstract class GitHubAssetRepositoryPlugin
+abstract class ArghRepositoryPlugin
 @Inject
 internal constructor() : Plugin<PluginAware> {
 
@@ -37,7 +37,7 @@ internal constructor() : Plugin<PluginAware> {
   }
 
   companion object {
-    private val logger: Logger = Logging.getLogger(GitHubAssetRepositoryPlugin::class.java)
+    private val logger: Logger = Logging.getLogger(ArghRepositoryPlugin::class.java)
 
     private const val GH_ASSET_PLUGIN_PREFIX = "com.github-assets."
   }
