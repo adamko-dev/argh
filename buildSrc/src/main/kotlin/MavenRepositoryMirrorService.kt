@@ -15,6 +15,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.logging.Logger
+import org.gradle.api.logging.Logging
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.kotlin.dsl.*
@@ -79,7 +81,7 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     // --port
 
     thread.start()
-    println("Launching maven repository mirror at http://localhost:$port/")
+    logger.info("Launching maven repository mirror at http://localhost:$port/")
 
     waitUntilServerUp()
 
@@ -111,7 +113,7 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
       if (response?.statusCode() == 200) {
         return
       } else {
-        println("Waiting for reposilite server to start ... ${response?.run { "${statusCode()} - ${body()}" }}")
+        logger.info("Waiting for reposilite server to start ... ${response?.run { "${statusCode()} - ${body()}" }}")
       }
       Thread.sleep(1000)
     }
@@ -173,10 +175,14 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
       "Failed to update reposilite mirrors: ${response.body()}"
     }
 
-    println("Updated mirrors: ${response.body()}")
+    logger.info("Updated mirrors: ${response.body()}")
   }
 
   override fun close() {
     thread.interrupt()
+  }
+
+  companion object {
+    private val logger: Logger = Logging.getLogger(MavenRepositoryMirrorService::class.java)
   }
 }
