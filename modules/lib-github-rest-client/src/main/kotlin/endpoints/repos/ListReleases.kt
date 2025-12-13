@@ -1,7 +1,8 @@
 package dev.adamko.githubapiclient.endpoints.repos
 
+import dev.adamko.githubapiclient.endpoints.PaginatedRoute
 import dev.adamko.githubapiclient.model.RepoRelease
-import io.ktor.resources.Resource
+import io.ktor.resources.*
 import kotlinx.serialization.SerialName
 
 /**
@@ -12,20 +13,10 @@ data object ListReleases {
   class Route internal constructor(
     val owner: String,
     val repo: String,
-    /**
-     *
-     * The number of results per page (max 100).
-     * For more information, see
-     * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
-     */
     @SerialName("per_page")
-    val perPage: Int? = null,
-    /**
-     * The page number of the results to fetch.
-     * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
-     */
-    val page: Int? = null,
-  )
+    override val perPage: Int? = null,
+    override val page: Int? = null,
+  ) : PaginatedRoute
 
   typealias ResponseBody = List<RepoRelease>
 }

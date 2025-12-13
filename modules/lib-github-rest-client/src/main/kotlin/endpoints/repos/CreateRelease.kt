@@ -6,7 +6,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 
-// https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#create-a-release
+/**
+ * https://docs.github.com/en/rest/releases/releases?apiVersion=2022-11-28#create-a-release
+ */
 data object CreateRelease {
 
   @Resource("/repos/{owner}/{repo}/releases")
