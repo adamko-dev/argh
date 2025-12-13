@@ -2,6 +2,7 @@
 
 package buildsrc
 
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -45,4 +46,10 @@ testing.suites.withType<JvmTestSuite>().configureEach {
 
 sourceSets.configureEach {
   java.setSrcDirs(emptyList<String>())
+}
+
+tasks.withType<Test>().configureEach {
+  testLogging {
+    setEvents(TestLogEvent.entries)
+  }
 }
