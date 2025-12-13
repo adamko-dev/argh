@@ -35,7 +35,7 @@ jobs:
       contents: read
       packages: write
       checks: write
-    uses: .github/workflows/run_gradle_task.yml
+    uses: ./.github/workflows/run_gradle_task.yml
     secrets: inherit
     with:
       runs-on: macos-latest # only macOS supports building all Kotlin targets

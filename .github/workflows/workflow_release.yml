@@ -22,7 +22,7 @@ concurrency:
 jobs:
 
   tests:
-    uses: .github/workflows/run_tests.yml
+    uses: ./.github/workflows/run_tests.yml
     permissions:
       checks: write
       contents: read
@@ -30,7 +30,7 @@ jobs:
       checkout-ref: ${{ inputs.checkout-ref }}
 
   dependency-graph:
-    uses: .github/workflows/run_gradle_dependency_graph.yml
+    uses: ./.github/workflows/run_gradle_dependency_graph.yml
     permissions:
       contents: write
     with:
@@ -40,7 +40,7 @@ jobs:
     needs: tests
     # only publish when manually triggered, or it's the main branch, or it's for a release
     if: inputs.checkout-ref || github.ref == 'refs/heads/main' || (github.event_name == 'release' && github.event.action == 'created')
-    uses: .github/workflows/run_publish_maven.yml
+    uses: ./.github/workflows/run_publish_maven.yml
     secrets: inherit
     permissions:
       checks: write
@@ -53,7 +53,7 @@ jobs:
     # only publish when manually triggered, or it's for a release
     # (Gradle Plugin Portal doesn't allow snapshot versions)
     if: inputs.checkout-ref || (github.event_name == 'release' && github.event.action == 'created')
-    uses: .github/workflows/run_gradle_task.yml
+    uses: ./.github/workflows/run_gradle_task.yml
     secrets: inherit
     permissions:
       contents: read

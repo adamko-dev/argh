@@ -18,7 +18,7 @@ concurrency:
 jobs:
 
   tests:
-    uses: .github/workflows/run_tests.yml
+    uses: ./.github/workflows/run_tests.yml
     permissions:
       contents: read
       checks: write
