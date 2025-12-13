@@ -63,17 +63,14 @@ jobs:
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v4
 
-      - name: Setup JDK 11
-        uses: actions/setup-java@v4
+      - name: Setup JDKs
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 11
-
-      - name: Setup JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+          java-version: |
+            11
+            17
+            21
 
       - name: Setup Android SDK # required for integration tests
         uses: android-actions/setup-android@v3
@@ -87,7 +84,7 @@ jobs:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
       - run: >-
-         ./gradlew ${{ inputs.gradle-task }}
+          ./gradlew ${{ inputs.gradle-task }}
         env:
           MAVEN_SONATYPE_USERNAME: ${{ secrets.MAVEN_SONATYPE_USERNAME }}
           MAVEN_SONATYPE_PASSWORD: ${{ secrets.MAVEN_SONATYPE_PASSWORD }}
