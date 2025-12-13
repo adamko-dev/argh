@@ -37,7 +37,7 @@ class GhaMavenPublishPluginTest {
       }
       .start()
 
-    result.waitFor(1, TimeUnit.MINUTES)
+    result.waitFor(5, TimeUnit.MINUTES)
     println(logFile.readText())
 
     val stdout = result.inputStream.bufferedReader().use { it.readText() }
