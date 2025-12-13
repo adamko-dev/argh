@@ -20,6 +20,7 @@ import org.gradle.api.services.BuildServiceParameters
 import org.gradle.kotlin.dsl.*
 import org.gradle.process.ExecOperations
 
+
 abstract class MavenRepositoryMirrorService @Inject constructor(
   private val execOps: ExecOperations,
 ) : BuildService<MavenRepositoryMirrorService.Parameters>,
@@ -65,7 +66,7 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
           maxHeapSize = "32m"
           isIgnoreExitValue = true
         }
-      } catch (_: InterruptedException) {
+      } catch (_: Exception) {
         // ignore
       }
     }
