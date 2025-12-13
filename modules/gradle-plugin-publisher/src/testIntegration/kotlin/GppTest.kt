@@ -283,7 +283,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        //"--skipGitHubUpload",
+        "--skipGitHubUpload",
         "--stacktrace",
       )
       .forwardOutput()
