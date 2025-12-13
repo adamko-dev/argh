@@ -3,6 +3,8 @@ plugins {
   kotlin("plugin.serialization")
 }
 
+description = "Internal Argh library. GitHub REST API client."
+
 dependencies {
   implementation(libs.kotlinx.serialization.json)
 

@@ -4,5 +4,5 @@ plugins {
   base
 }
 
-group = "adamko-dev.argh"
+group = "dev.adamko.argh"
 version = "0.0.1"

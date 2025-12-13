@@ -8,5 +8,5 @@ dependencies {
 
   implementation("dev.adamko.gradle:dev-publish-plugin:0.4.2")
 
-  implementation("io.github.hfhbd.kfx:gradle-plugin:0.1.5")
+  implementation(libs.gradlePlugin.nmcp)
 }

@@ -4,6 +4,8 @@ plugins {
   buildsrc.`kotlin-maven-plugin`
 }
 
+description = "Argh Maven plugin for attaching Maven publications as GitHub Release Assets."
+
 dependencies {
   implementation(projects.modules.libGmm)
   devPublication(projects.modules.libGmm)

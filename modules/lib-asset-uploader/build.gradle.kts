@@ -1,7 +1,8 @@
 plugins {
   buildsrc.`kotlin-lib`
-//  kotlin("plugin.serialization")
 }
+
+description = "Internal Argh library. A shared library for handling GitHub Asset publications."
 
 dependencies {
   implementation(projects.modules.libGmm)

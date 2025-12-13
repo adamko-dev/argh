@@ -9,7 +9,7 @@ plugins {
   id("buildsrc.maven-repository-mirror")
 }
 
-val mavenCliSetup :  MavenCliSetupExtension = extensions.getByType()
+val mavenCliSetup: MavenCliSetupExtension = extensions.getByType()
 
 val mavenPluginTaskGroup = "maven plugin"
 

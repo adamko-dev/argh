@@ -4,7 +4,7 @@ package buildsrc
 
 plugins {
   id("buildsrc.kotlin-base")
-  id("buildsrc.publishing")
+  id("buildsrc.maven-publishing")
   `java-gradle-plugin`
 }
 

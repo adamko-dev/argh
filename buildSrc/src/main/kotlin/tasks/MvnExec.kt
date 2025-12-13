@@ -19,7 +19,7 @@ import org.gradle.work.NormalizeLineEndings
 /**
  * Runs a Maven task.
  *
- * See `dokkabuild.setup-maven-cli.gradle.kts` for details on the Maven CLI installation.
+ * See `maven-cli-setup.gradle.kts` for details on the Maven CLI installation.
  */
 @CacheableTask
 abstract class MvnExec

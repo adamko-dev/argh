@@ -2,10 +2,12 @@
 
 import buildsrc.tasks.MvnExec
 
-
 plugins {
   buildsrc.`kotlin-maven-plugin`
 }
+
+description =
+  "This Maven Extension resolves artifacts published to GitHub Release Assets by the Argh publisher plugins."
 
 dependencies {
   implementation(projects.modules.libGmm)
@@ -13,16 +15,11 @@ dependencies {
 
   implementation(libs.apacheMaven.pluginApi)
   implementation(libs.apacheMaven.core)
-  //implementation(libs.apacheMaven.resolverSpi)
+
   compileOnly(libs.apacheMaven.pluginAnnotations)
 
   implementation(libs.apacheMaven.model)
   implementation(libs.apacheMaven.modelBuilder)
-
-
-//  implementation("org.apache.maven:maven-plugin-api:${libs.versions.apacheMaven.core.get()}")
-//  implementation("org.apache.maven:maven-core:${libs.versions.apacheMaven.core.get()}")
-//  compileOnly("org.apache.maven.plugin-tools:maven-plugin-annotations:${libs.versions.apacheMaven.pluginTools.get()}")
 
   compileOnly(libs.slf4j.api)
 }
