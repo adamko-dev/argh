@@ -35,13 +35,13 @@ val reposiliteDir: Provider<Directory> =
   objects.directoryProperty()
     .fileProvider(
       providers.environmentVariable("REPOSILITE_DIR")
-        .map { File(it) }
+        .map { File(it).resolve(projectPathAsFileName) }
     )
-    .orElse(project.isolated.rootProject.projectDirectory.dir("build/reposilite"))
+    .orElse(layout.buildDirectory.dir("reposilite"))
 
 
 val serviceProvider: Provider<MavenRepositoryMirrorService> = project.gradle.sharedServices.registerIfAbsent(
-  "mavenRepositoryMirrorService",
+  "mavenRepositoryMirrorService_${project.path}",
   MavenRepositoryMirrorService::class
 ) {
   parameters.reposiliteJar.from(reposiliteJarResolver())
