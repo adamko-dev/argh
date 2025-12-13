@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.lib.utils
+package dev.adamko.argh.lib.utils
 
 import java.io.OutputStream.nullOutputStream
 import java.nio.file.Path

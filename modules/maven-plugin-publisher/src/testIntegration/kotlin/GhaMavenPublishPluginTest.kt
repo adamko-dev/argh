@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.maven
+package dev.adamko.argh.maven.publisher
 
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -60,7 +60,7 @@ private fun createProject(projectDir: Path) {
 //      """
 //      <extensions>
 //        <extension>
-//          <groupId>adamko-dev.github-asset-publish</groupId>
+//          <groupId>adamko-dev.argh</groupId>
 //          <artifactId>maven-plugin-repository</artifactId>
 //          <version>0.0.1</version>
 //        </extension>
@@ -113,7 +113,7 @@ private fun pomXml(): String {
     <build>
       <plugins>
         <plugin>
-          <groupId>adamko-dev.github-asset-publish</groupId>
+          <groupId>adamko-dev.argh</groupId>
           <artifactId>maven-plugin-publisher</artifactId>
           <version>0.0.1</version>
         </plugin>

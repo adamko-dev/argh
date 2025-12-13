@@ -1,6 +1,6 @@
-package dev.adamko.githubassetpublish.internal
+package dev.adamko.argh.gradle.publisher.internal
 
-import dev.adamko.githubassetpublish.internal.PluginCacheDirSource.Companion.pluginCacheDirSource
+import dev.adamko.argh.gradle.publisher.internal.PluginCacheDirSource.Companion.pluginCacheDirSource
 import java.nio.file.Path
 import javax.inject.Inject
 import kotlin.io.path.Path

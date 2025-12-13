@@ -1,6 +1,6 @@
 @file:JvmName("Uploader")
 
-package dev.adamko.githubassetpublish.lib
+package dev.adamko.argh.lib.uploader
 
 import dev.adamko.githubapiclient.*
 import dev.adamko.githubapiclient.model.RepoRelease
@@ -212,9 +212,9 @@ private suspend fun getOrCreateRelease(
       ).toList()
 
     if (
-      !ghRelease.draft
-      && !ghRelease.prerelease
-      && ghRelease.immutable != true
+      (ghRelease.draft
+          || ghRelease.prerelease
+          || ghRelease.immutable == true)
       && existingFiles.isNotEmpty()
     ) {
       handleExistingReleaseAssets(

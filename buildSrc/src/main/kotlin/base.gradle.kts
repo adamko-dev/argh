@@ -4,5 +4,5 @@ plugins {
   base
 }
 
-group = "adamko-dev.github-asset-publish"
+group = "adamko-dev.argh"
 version = "0.0.1"

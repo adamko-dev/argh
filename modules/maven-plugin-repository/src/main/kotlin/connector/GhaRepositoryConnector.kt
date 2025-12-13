@@ -1,6 +1,6 @@
-package dev.adamko.githubassetpublish.maven.connector
+package dev.adamko.argh.maven.repository.connector
 
-import dev.adamko.githubassetpublish.maven.layout.GhaRepositoryLayout
+import dev.adamko.argh.maven.repository.layout.GhaRepositoryLayout
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.URI

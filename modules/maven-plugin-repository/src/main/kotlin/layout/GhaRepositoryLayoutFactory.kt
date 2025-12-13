@@ -1,6 +1,6 @@
-package dev.adamko.githubassetpublish.maven.layout
+package dev.adamko.argh.maven.repository.layout
 
-import dev.adamko.githubassetpublish.maven.GitHubAssetsContentType
+import dev.adamko.argh.maven.repository.GitHubAssetsContentType
 import javax.inject.Inject
 import javax.inject.Named
 import org.eclipse.aether.RepositorySystemSession

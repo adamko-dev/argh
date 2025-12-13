@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.maven
+package dev.adamko.argh.maven.repository
 
 internal const val GitHubAssetsContentType = "githubAssets"
 internal const val githubAssetsRepo = "githubAssetsRepo"

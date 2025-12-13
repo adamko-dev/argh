@@ -1,6 +1,6 @@
-package dev.adamko.githubassetpublish.maven.layout
+package dev.adamko.argh.maven.repository.layout
 
-import dev.adamko.githubassetpublish.maven.modify
+import dev.adamko.argh.maven.repository.modify
 import java.net.URI
 import org.eclipse.aether.artifact.Artifact
 import org.eclipse.aether.metadata.Metadata

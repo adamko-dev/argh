@@ -1,12 +1,12 @@
-package dev.adamko.githubassetpublish.lib
+package dev.adamko.argh.lib.uploader
 
-import dev.adamko.githubassetpublish.lib.Logger.Companion.warn
-import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
-import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata.Companion.hasAttributes
-import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata.StringAttribute
-import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata
-import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata.Companion.saveTo
-import dev.adamko.githubassetpublish.lib.utils.computeChecksum
+import dev.adamko.argh.lib.model.GradleModuleMetadata
+import dev.adamko.argh.lib.model.GradleModuleMetadata.Companion.hasAttributes
+import dev.adamko.argh.lib.model.GradleModuleMetadata.StringAttribute
+import dev.adamko.argh.lib.model.MutableGradleModuleMetadata
+import dev.adamko.argh.lib.model.MutableGradleModuleMetadata.Companion.saveTo
+import dev.adamko.argh.lib.uploader.Logger.Companion.warn
+import dev.adamko.argh.lib.utils.computeChecksum
 import java.nio.file.Path
 import java.nio.file.StandardOpenOption
 import kotlin.io.path.*

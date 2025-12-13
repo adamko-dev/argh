@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "github-asset-publish"
+rootProject.name = "argh"
 
 pluginManagement {
   repositories {

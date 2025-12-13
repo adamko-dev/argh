@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package dev.adamko.githubassetpublish.lib.internal.model
+package dev.adamko.argh.lib.model
 
 import java.nio.file.Path
 import kotlin.io.path.inputStream

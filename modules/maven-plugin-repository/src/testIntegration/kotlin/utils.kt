@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.maven
+package dev.adamko.argh.maven.repository
 
 import java.nio.file.Path
 import kotlin.io.path.Path

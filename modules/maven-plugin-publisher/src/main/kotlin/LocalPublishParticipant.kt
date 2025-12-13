@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.mavenPublish
+package dev.adamko.argh.maven.publisher
 
 //import org.apache.maven.AbstractMavenLifecycleParticipant
 //import org.apache.maven.MavenExecutionException

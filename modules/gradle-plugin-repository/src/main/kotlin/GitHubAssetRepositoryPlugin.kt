@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish
+package dev.adamko.argh.gradle.repository
 
 import javax.inject.Inject
 import org.gradle.api.Plugin

@@ -1,6 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-package dev.adamko.githubassetpublish.internal
+package dev.adamko.argh.gradle.publisher.internal
 
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project

@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.maven.metadata
+package dev.adamko.argh.maven.repository.metadata
 
 //import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
 //

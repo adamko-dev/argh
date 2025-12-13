@@ -1,7 +1,5 @@
-package dev.adamko.githubassetpublish.lib.utils.internal
+package dev.adamko.argh.lib.utils
 
-import dev.adamko.githubassetpublish.lib.utils.InternalUtilsApi
-import dev.adamko.githubassetpublish.lib.utils.computeChecksum
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.security.NoSuchAlgorithmException

@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.tasks
+package dev.adamko.argh.gradle.publisher.tasks
 
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
@@ -75,7 +75,7 @@ internal constructor(
       return
     }
     execOps.javaexec { spec ->
-      spec.mainClass.set("dev.adamko.githubassetpublish.lib.Uploader")
+      spec.mainClass.set("dev.adamko.argh.lib.uploader.Uploader")
       spec.classpath(runtimeClasspath.files)
       spec.args(
         buildList {

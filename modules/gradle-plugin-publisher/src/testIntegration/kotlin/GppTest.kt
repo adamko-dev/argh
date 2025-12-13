@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish
+package dev.adamko.argh.gradle.publisher
 
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -50,7 +50,7 @@ class GppTest {
       """
       |plugins {
       |  `java-library`
-      |  id("dev.adamko.github-asset-publisher") version "+"
+      |  id("dev.adamko.argh.publisher") version "+"
       |  `maven-publish`
       |}
       |
@@ -70,7 +70,7 @@ class GppTest {
       |  withSourcesJar()
       |}
       |
-      |tasks.withType<dev.adamko.githubassetpublish.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
+      |tasks.withType<dev.adamko.argh.gradle.publisher.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
       |  githubRepo.set("aSemy/demo-github-asset-publish-repo")
       |}
       |""".trimMargin()
@@ -172,7 +172,7 @@ class GppTest {
       """
       |plugins {
       |  kotlin("multiplatform") version "2.2.21"
-      |  id("dev.adamko.github-asset-publisher") version "+"
+      |  id("dev.adamko.argh.publisher") version "+"
       |  `maven-publish`
       |}
       |
@@ -185,7 +185,7 @@ class GppTest {
       |  linuxX64()
       |}
       |
-      |tasks.withType<dev.adamko.githubassetpublish.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
+      |tasks.withType<dev.adamko.argh.gradle.publisher.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
       |  githubRepo.set("aSemy/demo-github-asset-publish-repo")
       |}
       |
@@ -283,7 +283,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        "--skipGitHubUpload",
+        //"--skipGitHubUpload",
         "--stacktrace",
       )
       .forwardOutput()

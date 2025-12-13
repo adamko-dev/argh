@@ -1,11 +1,11 @@
 @file:Suppress("UnstableApiUsage")
 
-package dev.adamko.githubassetpublish
+package dev.adamko.argh.gradle.publisher
 
-import dev.adamko.githubassetpublish.internal.PluginCacheDirSource.Companion.pluginCacheDirSource
-import dev.adamko.githubassetpublish.internal.UploadReleaseDependencies
-import dev.adamko.githubassetpublish.tasks.PrepareGitHubReleaseFilesTask
-import dev.adamko.githubassetpublish.tasks.UploadGitHubReleaseAssetsTask
+import dev.adamko.argh.gradle.publisher.internal.PluginCacheDirSource.Companion.pluginCacheDirSource
+import dev.adamko.argh.gradle.publisher.internal.UploadReleaseDependencies
+import dev.adamko.argh.gradle.publisher.tasks.PrepareGitHubReleaseFilesTask
+import dev.adamko.argh.gradle.publisher.tasks.UploadGitHubReleaseAssetsTask
 import javax.inject.Inject
 import org.gradle.api.Plugin
 import org.gradle.api.Project

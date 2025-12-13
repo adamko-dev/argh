@@ -17,6 +17,6 @@ dependencies {
 
 kotlin {
   compilerOptions {
-    optIn.add("dev.adamko.githubassetpublish.lib.utils.InternalUtilsApi")
+    optIn.add("dev.adamko.argh.lib.utils.InternalUtilsApi")
   }
 }

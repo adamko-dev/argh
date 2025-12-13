@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.lib
+package dev.adamko.argh.lib.uploader
 
 interface Logger {
   fun error(message: String)

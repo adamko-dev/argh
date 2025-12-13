@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.internal
+package dev.adamko.argh.gradle.publisher.internal
 
 import org.gradle.api.attributes.*
 import org.gradle.api.attributes.java.TargetJvmEnvironment

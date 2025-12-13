@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.lib.utils
+package dev.adamko.argh.lib.utils
 
 /**
  * Build a string with indentable blocks.

@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish
+package dev.adamko.argh.gradle.publisher
 
 import javax.inject.Inject
 import org.gradle.api.file.DirectoryProperty

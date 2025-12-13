@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.tasks
+package dev.adamko.argh.gradle.publisher.tasks
 
 import java.nio.file.Path
 import javax.inject.Inject
@@ -68,7 +68,7 @@ internal constructor(
     ).map { (key, value) -> "$key=$value" }
 
     execOps.javaexec { spec ->
-      spec.mainClass.set("dev.adamko.githubassetpublish.lib.PrepareGitHubAssetsAction")
+      spec.mainClass.set("dev.adamko.argh.lib.uploader.PrepareGitHubAssetsAction")
       spec.classpath(runtimeClasspath)
       spec.args(arguments)
     }

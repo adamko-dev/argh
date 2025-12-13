@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish
+package dev.adamko.argh.gradle.repository
 
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.kotlin.dsl.*

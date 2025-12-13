@@ -1,2 +1,2 @@
-dev.adamko.githubassetpublish.maven.connector.GhaRepositoryConnectorFactory
-dev.adamko.githubassetpublish.maven.layout.GitHubAssetsRepositoryLayoutFactory
+dev.adamko.argh.maven.repository.connector.GhaRepositoryConnectorFactory
+dev.adamko.argh.maven.repository.layout.GitHubAssetsRepositoryLayoutFactory

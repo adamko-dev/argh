@@ -1,7 +1,7 @@
-package dev.adamko.githubassetpublish.maven.connector
+package dev.adamko.argh.maven.repository.connector
 
-import dev.adamko.githubassetpublish.maven.GitHubAssetsContentType
-import dev.adamko.githubassetpublish.maven.githubAssetsRepo
+import dev.adamko.argh.maven.repository.GitHubAssetsContentType
+import dev.adamko.argh.maven.repository.githubAssetsRepo
 import javax.inject.Inject
 import javax.inject.Named
 import org.eclipse.aether.RepositorySystemSession

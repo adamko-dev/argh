@@ -1,9 +1,9 @@
 @file:OptIn(ExperimentalSerializationApi::class)
 
-package dev.adamko.githubassetpublish.lib.internal.model
+package dev.adamko.argh.lib.model
 
-import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata.AttributeValue
-import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata.Companion.json
+import dev.adamko.argh.lib.model.GradleModuleMetadata.AttributeValue
+import dev.adamko.argh.lib.model.GradleModuleMetadata.Companion.json
 import java.nio.file.Path
 import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream

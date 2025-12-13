@@ -1,4 +1,4 @@
-package dev.adamko.githubassetpublish.mavenPublish
+package dev.adamko.argh.maven.publisher
 
 import java.io.File
 import org.apache.maven.plugin.AbstractMojo
