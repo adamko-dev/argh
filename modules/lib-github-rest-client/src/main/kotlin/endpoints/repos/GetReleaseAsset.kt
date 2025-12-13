@@ -11,14 +11,14 @@ data object GetReleaseAsset {
   class Route internal constructor(
     val owner: String,
     val repo: String,
-    val assetId: Int,
+    val assetId: Long,
   )
   @Serializable
   data class ResponseBody(
     val url: String,
     @SerialName("browser_download_url")
     val browserDownloadUrl: String,
-    val id: Int,
+    val id: Long,
     @SerialName("node_id")
     val nodeId: String,
     val name: String,

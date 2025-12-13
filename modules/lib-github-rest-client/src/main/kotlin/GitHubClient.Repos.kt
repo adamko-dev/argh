@@ -5,13 +5,19 @@ import dev.adamko.githubapiclient.endpoints.repos.CreateRelease.RequestBody.Make
 import dev.adamko.githubapiclient.model.RepoRelease
 import dev.adamko.githubapiclient.model.RepoReleaseAsset
 import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.resources.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.serialization.*
 import io.ktor.util.cio.*
+import io.ktor.utils.io.*
+import io.ktor.utils.io.streams.*
 import java.nio.file.Path
 import kotlin.io.path.fileSize
 import kotlin.io.path.name
+import kotlin.io.path.outputStream
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -60,15 +66,56 @@ suspend fun GitHubClient.Repos.getRelease(
 suspend fun GitHubClient.Repos.getReleaseAsset(
   owner: String,
   repo: String,
-  assetId: Int,
+  assetId: Long,
 ): GetReleaseAsset.ResponseBody {
   val resource = GetReleaseAsset.Route(
     owner = owner,
     repo = repo,
     assetId = assetId,
   )
-  val result = httpClient.get(resource = resource) {}
-  TODO()
+  val result = httpClient.get(resource = resource)
+  return result.body()
+}
+
+/**
+ * https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#get-a-release-asset
+ */
+suspend fun GitHubClient.Repos.downloadReleaseAsset(
+  owner: String,
+  repo: String,
+  assetId: Long,
+  destination: Path,
+) {
+  val resource = GetReleaseAsset.Route(
+    owner = owner,
+    repo = repo,
+    assetId = assetId,
+  )
+  httpClient.prepareGet(resource) {
+    headers {
+      accept(ContentType.Application.OctetStream)
+      exclude(ContentType.Application.Json) // automatically added by ContentNegotiation plugin
+    }
+  }.execute { httpResponse ->
+    val channel: ByteReadChannel = httpResponse.body()
+    channel.copyAndClose(destination.outputStream().asByteWriteChannel())
+  }
+}
+
+/**
+ * https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#delete-a-release-asset
+ */
+suspend fun GitHubClient.Repos.deleteReleaseAsset(
+  owner: String,
+  repo: String,
+  assetId: Long,
+) {
+  val resource = DeleteReleaseAsset.Route(
+    owner = owner,
+    repo = repo,
+    assetId = assetId,
+  )
+  httpClient.delete(resource)
 }
 
 /**
@@ -183,13 +230,13 @@ suspend fun GitHubClient.Repos.createRelease(
  * It can be safely deleted.
  *
  * **Notes:**
- * *   GitHub renames asset filenames that have special characters, non-alphanumeric characters, and leading or trailing periods.
+ * - GitHub renames asset filenames that have special characters, non-alphanumeric characters, and leading or trailing periods.
  * The "[List release assets](https://docs.github.com/rest/releases/assets#list-release-assets)"
  * endpoint lists the renamed filenames.
  * For more information and help, contact [GitHub Support](https://support.github.com/contact?tags=dotcom-rest-api).
- * *   To find the `release_id` query the [`GET /repos/{owner}/{repo}/releases/latest` endpoint](https://docs.github.com/rest/releases/releases#get-the-latest-release).
+ * - To find the `release_id` query the [`GET /repos/{owner}/{repo}/releases/latest` endpoint](https://docs.github.com/rest/releases/releases#get-the-latest-release).
  *
- * *   If you upload an asset with the same filename as another uploaded asset, you'll receive an error and must delete the old file before you can re-upload the new asset.
+ * - If you upload an asset with the same filename as another uploaded asset, you'll receive an error and must delete the old file before you can re-upload the new asset.
  *
  * https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#upload-a-release-asset
  */
@@ -217,35 +264,39 @@ suspend fun GitHubClient.Repos.uploadReleaseAsset(
       append(HttpHeaders.ContentLength, file.fileSize().toString())
     }
   }
-  return result.body()
+  return try {
+    result.body()
+  } catch (e: ContentConvertException) {
+    throw RuntimeException("Failed to upload asset: ${e.message}. ${result.bodyAsText()}", e)
+  }
 }
 
 
-/**
- * ## List release assets
- *
- * @param[perPage]
- * The number of results per page (max 100).
- * For more information, see
- * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
- */
-suspend fun GitHubClient.Repos.listReleaseAssets(
-  owner: String,
-  repo: String,
-  releaseId: Int,
-  perPage: Int? = null,
-  page: Int? = null,
-): ListReleaseAssets.ResponseBody {
-  val resource = ListReleaseAssets.Route(
-    owner = owner,
-    repo = repo,
-    releaseId = releaseId,
-    perPage = perPage,
-    page = page,
-  )
-  val response = httpClient.get(resource = resource)
-  return response.body()
-}
+///**
+// * ## List release assets
+// *
+// * @param[perPage]
+// * The number of results per page (max 100).
+// * For more information, see
+// * ["Using pagination in the REST API."](https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28)
+// */
+//private suspend fun GitHubClient.Repos.listReleaseAssets(
+//  owner: String,
+//  repo: String,
+//  releaseId: Int,
+//  perPage: Int? = null,
+//  page: Int? = null,
+//): ListReleaseAssets.ResponseBody {
+//  val resource = ListReleaseAssets.Route(
+//    owner = owner,
+//    repo = repo,
+//    releaseId = releaseId,
+//    perPage = perPage,
+//    page = page,
+//  )
+//  val response = httpClient.get(resource = resource)
+//  return response.body()
+//}
 
 /**
  * ## List release assets
@@ -265,17 +316,27 @@ fun GitHubClient.Repos.listAllReleaseAssets(
   var page = page
   return flow {
     do {
-      val assets = listReleaseAssets(
+      val resource = ListReleaseAssets.Route(
         owner = owner,
         repo = repo,
         releaseId = releaseId,
         perPage = perPage,
         page = page++,
       )
+      val response = httpClient.get(resource = resource)
+
+      val assets: ListReleaseAssets.ResponseBody = response.body()
+
       if (assets.isEmpty()) break
+
       assets.forEach { asset ->
         emit(asset)
       }
+
+      val linkHeader = response.headers["link"].orEmpty()
+      val hasNext = "rel=\"next\"" in linkHeader
+      if (!hasNext) break
+
     } while (currentCoroutineContext().isActive)
   }
 }

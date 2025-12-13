@@ -252,5 +252,9 @@ sealed interface GradleModuleMetadata {
         return json.decodeFromStream(MutableGradleModuleMetadata.Companion.serializer(), source)
       }
     }
+
+    fun Variant.hasAttributes(vararg required: Pair<String, AttributeValue>): Boolean =
+      required.all { (k, v) -> attributes[k] == v }
+
   }
 }

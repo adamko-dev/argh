@@ -34,6 +34,7 @@ class GppTest {
       |    gradlePluginPortal()
       |  }
       |}
+      |
       |dependencyResolutionManagement {
       |  repositoriesMode = RepositoriesMode.PREFER_SETTINGS
       |  repositories {
@@ -64,6 +65,11 @@ class GppTest {
       |  }
       |}
       |
+      |java {
+      |  withJavadocJar()
+      |  withSourcesJar()
+      |}
+      |
       |tasks.withType<dev.adamko.githubassetpublish.tasks.UploadGitHubReleaseAssetsTask>().configureEach {
       |  githubRepo.set("aSemy/demo-github-asset-publish-repo")
       |}
@@ -76,6 +82,7 @@ class GppTest {
         """
         |package com.example;
         |
+        |/** Demonstration class. */
         |public class Demo {}
         |""".trimMargin()
       )
@@ -107,18 +114,16 @@ class GppTest {
 
     assertLinesMatch(
       listOf(
+        "test-project-1.0.0-sources.jar",
+        "test-project-1.0.0-sources.jar.sha256",
         "test-project-1.0.0.ivy.xml",
         "test-project-1.0.0.ivy.xml.sha256",
-        "test-project-1.0.0.ivy.xml.sha512",
         "test-project-1.0.0.jar",
         "test-project-1.0.0.jar.sha256",
-        "test-project-1.0.0.jar.sha512",
         "test-project-1.0.0.module",
         "test-project-1.0.0.module.sha256",
-        "test-project-1.0.0.module.sha512",
         "test-project-1.0.0.pom",
         "test-project-1.0.0.pom.sha256",
-        "test-project-1.0.0.pom.sha512",
       ),
       githubReleaseFiles,
     )
@@ -151,6 +156,7 @@ class GppTest {
       |    gradlePluginPortal()
       |  }
       |}
+      |
       |dependencyResolutionManagement {
       |  repositoriesMode = RepositoriesMode.PREFER_SETTINGS
       |  repositories {
@@ -183,6 +189,17 @@ class GppTest {
       |  githubRepo.set("aSemy/demo-github-asset-publish-repo")
       |}
       |
+      |val javadocJarStub by tasks.registering(Jar::class) {
+      |  group = org.gradle.api.plugins.JavaBasePlugin.DOCUMENTATION_GROUP
+      |  description = "Empty Javadoc Jar (required by Maven Central)"
+      |  archiveClassifier.set("javadoc")
+      |}
+      |
+      |publishing {
+      |  publications.withType<MavenPublication>().configureEach {
+      |      artifact(javadocJarStub)
+      |  }
+      |}
       |""".trimMargin()
     )
 
@@ -241,7 +258,6 @@ class GppTest {
 //          }
 //          listOf(
 //            ".sha256",
-//            ".sha512",
 //          ).forEach { checksum ->
 //            add("test-project$variant-$projectVersion-$artifact$checksum")
 //            if (variant == "") {
@@ -256,55 +272,38 @@ class GppTest {
       listOf(
         "test-project-$projectVersion-sources.jar",
         "test-project-$projectVersion-sources.jar.sha256",
-        "test-project-$projectVersion-sources.jar.sha512",
         "test-project-$projectVersion.ivy.xml",
         "test-project-$projectVersion.ivy.xml.sha256",
-        "test-project-$projectVersion.ivy.xml.sha512",
         "test-project-$projectVersion.jar",
         "test-project-$projectVersion.jar.sha256",
-        "test-project-$projectVersion.jar.sha512",
         "test-project-$projectVersion.module",
         "test-project-$projectVersion.module.sha256",
-        "test-project-$projectVersion.module.sha512",
         "test-project-$projectVersion.pom",
         "test-project-$projectVersion.pom.sha256",
-        "test-project-$projectVersion.pom.sha512",
         "test-project-js-$projectVersion-sources.jar",
         "test-project-js-$projectVersion-sources.jar.sha256",
-        "test-project-js-$projectVersion-sources.jar.sha512",
         "test-project-js-$projectVersion.klib",
         "test-project-js-$projectVersion.klib.sha256",
-        "test-project-js-$projectVersion.klib.sha512",
         "test-project-js-$projectVersion.module",
         "test-project-js-$projectVersion.module.sha256",
-        "test-project-js-$projectVersion.module.sha512",
         "test-project-js-$projectVersion.pom",
         "test-project-js-$projectVersion.pom.sha256",
-        "test-project-js-$projectVersion.pom.sha512",
         "test-project-jvm-$projectVersion-sources.jar",
         "test-project-jvm-$projectVersion-sources.jar.sha256",
-        "test-project-jvm-$projectVersion-sources.jar.sha512",
         "test-project-jvm-$projectVersion.jar",
         "test-project-jvm-$projectVersion.jar.sha256",
-        "test-project-jvm-$projectVersion.jar.sha512",
         "test-project-jvm-$projectVersion.module",
         "test-project-jvm-$projectVersion.module.sha256",
-        "test-project-jvm-$projectVersion.module.sha512",
         "test-project-jvm-$projectVersion.pom",
         "test-project-jvm-$projectVersion.pom.sha256",
-        "test-project-jvm-$projectVersion.pom.sha512",
         "test-project-linuxx64-$projectVersion-sources.jar",
         "test-project-linuxx64-$projectVersion-sources.jar.sha256",
-        "test-project-linuxx64-$projectVersion-sources.jar.sha512",
         "test-project-linuxx64-$projectVersion.klib",
         "test-project-linuxx64-$projectVersion.klib.sha256",
-        "test-project-linuxx64-$projectVersion.klib.sha512",
         "test-project-linuxx64-$projectVersion.module",
         "test-project-linuxx64-$projectVersion.module.sha256",
-        "test-project-linuxx64-$projectVersion.module.sha512",
         "test-project-linuxx64-$projectVersion.pom",
         "test-project-linuxx64-$projectVersion.pom.sha256",
-        "test-project-linuxx64-$projectVersion.pom.sha512",
       ),
       githubReleaseFiles,
     )
@@ -313,7 +312,7 @@ class GppTest {
       .withProjectDir(projectDir.toFile())
       .withArguments(
         "uploadGitHubReleaseAssets",
-        //"--skipGitHubUpload",
+        "--skipGitHubUpload",
         "--stacktrace",
       )
       .forwardOutput()

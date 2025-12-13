@@ -2,7 +2,6 @@ package dev.adamko.githubapiclient.endpoints.repos
 
 import dev.adamko.githubapiclient.model.RepoRelease
 import io.ktor.resources.*
-import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -47,10 +46,4 @@ data object CreateRelease {
   }
 
   typealias ResponseBody = RepoRelease
-
-//  @Serializable
-//  @JvmInline
-//  value class ResponseBody(
-//    val content: List<RepoRelease>
-//  )
 }

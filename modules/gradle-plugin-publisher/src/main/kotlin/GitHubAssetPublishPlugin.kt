@@ -77,7 +77,6 @@ internal constructor(
       artifactMetadataExtensions.convention(
         setOf(
           "sha256",
-          "sha512",
           "asc",
         )
       )

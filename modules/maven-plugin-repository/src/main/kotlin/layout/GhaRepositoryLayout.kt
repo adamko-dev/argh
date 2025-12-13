@@ -19,7 +19,6 @@ class GhaRepositoryLayout(
   override fun getChecksumAlgorithmFactories(): List<ChecksumAlgorithmFactory> {
     checksumAlgorithmFactorySelector.selectList(
       listOf(
-        "SHA-512",
         "SHA-256",
       )
     )

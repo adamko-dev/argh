@@ -3,15 +3,13 @@ package dev.adamko.githubapiclient
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.cache.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.plugins.logging.DEFAULT
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logger
-import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.resources.*
-import io.ktor.client.request.accept
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.util.*
 import kotlinx.serialization.json.Json
 
 internal val defaultHttpClient: HttpClient by lazy {
@@ -21,85 +19,37 @@ internal val defaultHttpClient: HttpClient by lazy {
       json(
         // Ktor's default Json sets encodeDefaults=true :(
         json = Json,
-//        {
-//          encodeDefaults = true
-//          isLenient = true
-//          allowSpecialFloatingPointValues = true
-//          allowStructuredMapKeys = true
-//          prettyPrint = false
-//          useArrayPolymorphism = false
-//        }
-
       )
     }
 
     install(Resources)
 
-//    install(Auth) {
-//      bearer {
-//        loadTokens {
-//          bearerTokenStorage.last()
-//        }
-//        refreshTokens {
-//          getGitHubAuthToken()
-//          val refreshTokenInfo: TokenInfo = client.post(
-//            url = "https://accounts.google.com/o/oauth2/token",
-////            formParameters = parameters {
-////              append("grant_type", "refresh_token")
-////              append("client_id", System.getenv("GOOGLE_CLIENT_ID"))
-////              append("refresh_token", oldTokens?.refreshToken ?: "")
-////            }
-//          ) { markAsRefreshTokenRequest() }.body()
-//          bearerTokenStorage.add(BearerTokens(refreshTokenInfo.accessToken, oldTokens?.refreshToken!!))
-//          bearerTokenStorage.last()
-//        }
-//        sendWithoutRequest { request ->
-//          request.url.host == "www.googleapis.com"
-//        }
-//      }
-//    }
-//
-//    install(Auth) {
-//      bearer {
-//        loadTokens {
-//          obtainAuthToken.action().let {
-//            BearerTokens(
-//              it.token.toString(),
-//              ""
-//            )
-//          }
-//        }
-//        // Configure bearer authentication
-//        refreshTokens {
-//          this.client
-//          // Refresh tokens and return them as the 'BearerTokens' instance
-//          BearerTokens("def456", "xyz111")
-//        }
-//      }
-//    }
-
-
     install(Logging) {
       logger = Logger.DEFAULT
-      level = LogLevel.BODY
-//      filter { request ->
-//        request.url.host.contains("ktor.io")
-//      }
+      level = LogLevel.ALL
       sanitizeHeader { header -> header == HttpHeaders.Authorization }
     }
 
     defaultRequest {
       url("https://api.github.com/")
       headers {
-        userAgent("dev.adamko.githubapiclient")
-        accept(GitHubClientAcceptHeader)
-        contentType(ContentType.Application.Json)
-//        append(HttpHeaders.UserAgent, "dev.adamko.githubapiclient")
-//        append(HttpHeaders.Accept, )
-//        append(HttpHeaders.Authorization, "Bearer ${token.token}")
-        gitHubApiVersion()
+        appendIfNameAbsent(HttpHeaders.Accept, GitHubClientAcceptHeader.toString())
+//        set(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+        appendIfNameAbsent(HttpHeaders.UserAgent, "dev.adamko.githubapiclient")
+        set("X-GitHub-Api-Version", "2022-11-28")
       }
     }
+
+    install(HttpCache) {
+//      val cacheFile = Path("build/cache").createDirectories().toFile()
+//      publicStorage(FileStorage(cacheFile))
+    }
+
+    install(HttpRedirect) {
+      //checkHttpMethod = false // allow redirect on non-GET too (optional)
+    }
+
+//    install(OutgoingHeadersLogger)
   }
 }
 
@@ -110,3 +60,11 @@ internal val HeadersBuilder.GitHubClientAcceptHeader: ContentType
 internal fun HeadersBuilder.gitHubApiVersion() {
   append("X-GitHub-Api-Version", "2022-11-28")
 }
+
+//val OutgoingHeadersLogger = io.ktor.client.plugins.api.createClientPlugin("OutgoingHeadersLogger") {
+//  onRequest { request, _ ->
+//    println(">>> ${request.method.value} ${request.url}")
+//    println(">>> Accept: ${request.headers[HttpHeaders.Accept]}")
+//    println(">>> Content-Type: ${request.headers[HttpHeaders.ContentType]}")
+//  }
+//}

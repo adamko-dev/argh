@@ -2,6 +2,8 @@ package dev.adamko.githubassetpublish.lib
 
 import dev.adamko.githubassetpublish.lib.Logger.Companion.warn
 import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata
+import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata.Companion.hasAttributes
+import dev.adamko.githubassetpublish.lib.internal.model.GradleModuleMetadata.StringAttribute
 import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata
 import dev.adamko.githubassetpublish.lib.internal.model.MutableGradleModuleMetadata.Companion.saveTo
 import dev.adamko.githubassetpublish.lib.utils.computeChecksum
@@ -34,6 +36,7 @@ class PrepareGitHubAssetsAction(
     )
 
     val allModules = findModuleMetadataFiles(stagingMavenRepo)
+      .onEach(::excludeJavadocVariants)
 
     val mapRootModuleToVariants = allModules
       .filter {
@@ -101,7 +104,7 @@ class PrepareGitHubAssetsAction(
      *
      * Use [Set] because some files might be available in multiple variants.
      */
-    val artifacts: Set<Path> =
+    fun allArtifacts(): Set<Path> =
       gmm.variants.flatMap { variant ->
         variant.files.map { file ->
           gmmFile.resolveSibling(file.url)
@@ -129,7 +132,7 @@ class PrepareGitHubAssetsAction(
     }
 
     variants.forEach { variant ->
-      val invalidFiles = variant.artifacts.filter { f -> variant.gmmFile.parent != f.parent }
+      val invalidFiles = variant.allArtifacts().filter { f -> variant.gmmFile.parent != f.parent }
       if (invalidFiles.isNotEmpty()) {
         val invalidFilesStrings =
           invalidFiles.map { it.relativeTo(variant.gmmFile.parent).invariantSeparatorsPathString }
@@ -151,9 +154,10 @@ class PrepareGitHubAssetsAction(
     destinationDir: Path,
     artifactMetadataExtensions: Set<String>,
   ): GradleModule {
-    val relocatedGmmFile = module.gmmFile.copyTo(destinationDir.resolve(module.gmmFile.name))
+    val relocatedGmmFile = destinationDir.resolve(module.gmmFile.name)
+    module.gmm.saveTo(relocatedGmmFile)
 
-    module.artifacts.forEach { src ->
+    module.allArtifacts().forEach { src ->
       val projectDir =
         Path(src.invariantSeparatorsPathString.commonPrefixWith(destinationDir.invariantSeparatorsPathString))
       logger.info(
@@ -211,6 +215,30 @@ class PrepareGitHubAssetsAction(
       }
 
   /**
+   * There's no point in publishing `javadoc.jar`s.
+   * The `sources.jar` is more useful.
+   * We must avoid attaching too many files as GitHub Assets to avoid hitting the 1k file limit.
+   */
+  private fun excludeJavadocVariants(
+    module: GradleModule
+  ) {
+    val before = module.gmm.variants.map { it.name }
+    module.gmm.variants.removeAll { variant ->
+      variant.hasAttributes(
+        "org.gradle.category" to StringAttribute("documentation"),
+        "org.gradle.docstype" to StringAttribute("javadoc"),
+      )
+    }
+    val after = module.gmm.variants.map { it.name }.toSet()
+
+    if (before.size != after.size) {
+      println("Removed variants from ${module.gmmFile.name}: ${before - after}")
+    } else {
+      println("No variants removed from ${module.gmmFile.name}. $before")
+    }
+  }
+
+  /**
    * Gradle is hardcoded to publish modules to a Maven layout,
    * but we relocate all files to be in the same directory.
    * So, we must update the GMM to remove the relative paths
@@ -218,7 +246,6 @@ class PrepareGitHubAssetsAction(
    */
   private fun updateModuleMetadata(
     module: GradleModule,
-//    metadata: MutableGradleModuleMetadata,
   ) {
     if (module.gmm.component.url?.startsWith("../../") == true) {
       module.gmm.component.url = module.gmm.component.url?.substringAfterLast("/")
@@ -269,28 +296,12 @@ class PrepareGitHubAssetsAction(
       options = arrayOf(StandardOpenOption.CREATE_NEW),
     )
 
-    setOf(
-      "256",
-      "512",
-    ).forEach { bits ->
-      ivyModuleFile.createShaChecksumFile(bits)
-    }
+    ivyModuleFile.createShaChecksumFile("256")
   }
 
   private fun createModuleChecksums(module: GradleModule) {
-    setOf(
-      "256",
-      "512",
-    ).forEach { bits ->
-      module.gmmFile.createShaChecksumFile(bits)
-      module.pomFile.createShaChecksumFile(bits)
-//      val checksum = module.gmmFile.computeChecksum("SHA-$bits")
-//      module.gmmFile.resolveSibling(module.gmmFile.name + ".sha$bits")
-//        .writeText(
-//          checksum,
-//          options = arrayOf(StandardOpenOption.CREATE_NEW),
-//        )
-    }
+    module.gmmFile.createShaChecksumFile("256")
+    module.pomFile.createShaChecksumFile("256")
   }
 
   companion object {

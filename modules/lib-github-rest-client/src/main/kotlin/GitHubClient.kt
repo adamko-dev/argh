@@ -31,8 +31,13 @@ class GitHubClient(
   }
 
   val repos: Repos = Repos(httpClient = httpClient)
+  val user: User = User(httpClient = httpClient)
 
   class Repos internal constructor(
+    internal val httpClient: HttpClient,
+  )
+
+  class User internal constructor(
     internal val httpClient: HttpClient,
   )
 }

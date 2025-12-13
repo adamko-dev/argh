@@ -4,6 +4,9 @@ import dev.adamko.githubapiclient.model.RepoRelease
 import io.ktor.resources.Resource
 import kotlinx.serialization.SerialName
 
+/**
+ * https://docs.github.com/en/rest/releases/assets?apiVersion=2022-11-28#list-release-assets
+ */
 data object ListReleases {
   @Resource("/repos/{owner}/{repo}/releases")
   class Route internal constructor(

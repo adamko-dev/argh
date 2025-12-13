@@ -8,6 +8,6 @@ data object DeleteReleaseAsset {
   class Route internal constructor(
     val owner: String,
     val repo: String,
-    val assetId: Int,
+    val assetId: Long,
   )
 }
