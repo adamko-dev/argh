@@ -1,5 +1,6 @@
 package buildsrc.tasks
 
+import java.io.ByteArrayOutputStream
 import java.util.*
 import javax.inject.Inject
 import org.gradle.api.DefaultTask
@@ -109,12 +110,25 @@ constructor(
         javaToolchains.launcherFor { languageVersion.set(javaVersion) }.get()
       }
 
-    exec.exec {
-      workingDir(workDirectory)
-      executable(mvnCli.get())
-      args(arguments)
-      javaToolchain?.metadata?.installationPath?.asFile?.invariantSeparatorsPath?.let {
-        environment("JAVA_HOME", it)
+    ByteArrayOutputStream().use { sink ->
+      val result = exec.exec {
+        workingDir(workDirectory)
+        executable(mvnCli.get())
+        args(arguments)
+        javaToolchain?.metadata?.installationPath?.asFile?.invariantSeparatorsPath?.let {
+          environment("JAVA_HOME", it)
+        }
+        standardOutput = sink
+        errorOutput = sink
+        isIgnoreExitValue = true
+      }
+
+      if (result.exitValue != 0) {
+        logger.error(
+          "[$path] failed with exit code ${result.exitValue}\n" +
+              sink.toByteArray().decodeToString().prependIndent()
+        )
+        result.assertNormalExitValue()
       }
     }
 
