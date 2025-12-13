@@ -96,24 +96,24 @@ private fun createProject(projectDir: Path) {
     parent.createDirectories()
     writeText(
       """
-      <extensions>
-        <extension>
-          <groupId>adamko-dev.github-asset-publish</groupId>
-          <artifactId>maven-plugin-repository</artifactId>
-          <version>0.0.1</version>
-        </extension>
-      </extensions>
-      """.trimIndent()
+      |<extensions>
+      |  <extension>
+      |    <groupId>adamko-dev.github-asset-publish</groupId>
+      |    <artifactId>maven-plugin-repository</artifactId>
+      |    <version>0.0.1</version>
+      |  </extension>
+      |</extensions>
+      |""".trimMargin()
     )
   }
   projectDir.resolve(".mvn/maven.config").apply {
     parent.createDirectories()
     writeText(
       """
-      -Dmaven.repo.local=.mvn/repository
-      -s
-      settings.xml
-      """.trimIndent()
+      |-Dmaven.repo.local=.mvn/repository
+      |-s
+      |settings.xml
+      |""".trimMargin()
     )
   }
 
@@ -121,62 +121,59 @@ private fun createProject(projectDir: Path) {
     parent.createDirectories()
     writeText(
       """
-        import com.example.*;
-
-        public class Main {
-          public static void main(String[] args) {
-            String demoValue = DemoKt.getDemo();
-            System.out.println(demoValue);
-          }
-        }
-      """.trimIndent()
+      |import com.example.*;
+      |
+      |public class Main {
+      |  public static void main(String[] args) {
+      |    String demoValue = DemoKt.getDemo();
+      |    System.out.println(demoValue);
+      |  }
+      |}
+      |""".trimMargin()
     )
   }
 }
 
 
 @Language("XML")
-private fun pomXml(): String {
-  return """
+private fun pomXml(): String = """
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>com.example</groupId>
-    <artifactId>github-assets-resolution.example</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+       xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>github-assets-resolution.example</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
 
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    </properties>
+  <properties>
+      <maven.compiler.source>21</maven.compiler.source>
+      <maven.compiler.target>21</maven.compiler.target>
+      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+      <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+  </properties>
 
-    <repositories>
-        <repository>
-            <id>github-assets</id>
-            <url>https://github.com/</url>
-            <layout>githubAssets</layout>
-            <releases><enabled>true</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots>
-        </repository>
-    </repositories>
-    
-    <dependencies>
-      <dependency>
-        <groupId>asemy.demo-github-asset-publish-repo</groupId>
-        <artifactId>test-project-jvm</artifactId>
-        <version>1.0.0</version>
-      </dependency>
-    </dependencies>
+  <repositories>
+      <repository>
+          <id>github-assets</id>
+          <url>https://github.com/</url>
+          <layout>githubAssets</layout>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+      </repository>
+  </repositories>
+  
+  <dependencies>
+    <dependency>
+      <groupId>asemy.demo-github-asset-publish-repo</groupId>
+      <artifactId>test-project-jvm</artifactId>
+      <version>1.0.0</version>
+    </dependency>
+  </dependencies>
 
 </project>
-""".trimIndent()
-}
+"""
 
 @Language("XML")
-private fun settingsXml(): String =
-  """
+private fun settingsXml(): String = """
 <settings>
   <profiles>
     <profile>
