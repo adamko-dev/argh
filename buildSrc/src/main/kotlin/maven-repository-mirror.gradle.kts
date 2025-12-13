@@ -27,11 +27,15 @@ fun reposiliteJarResolver(): NamedDomainObjectProvider<ResolvableConfiguration> 
   }
 }
 
+val projectPathAsFileName: String =
+  project.path.map { if (it.isLetterOrDigit()) it else "_" }.joinToString("")
+
+
 val reposiliteDir: Provider<Directory> =
   objects.directoryProperty()
     .fileProvider(
       providers.environmentVariable("REPOSILITE_DIR")
-        .map { File(it) }
+        .map { File(it).resolve(projectPathAsFileName) }
     )
     .orElse(layout.buildDirectory.dir("reposilite"))
 
