@@ -2,3 +2,6 @@
 build/
 .kotlin/
 .idea/
+
+
+.secret.*
