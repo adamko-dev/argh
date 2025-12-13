@@ -56,10 +56,11 @@ internal constructor(
 
   private fun preflightChecks() {
     // TODO
+    //   - Check number of files is <1000 (GitHub has a limit of 1k files)
+    //     (Note: must also count checksum files and `.asc` files)
+    //   - Check all files are under 2GB (GitHub limits each asset to under 2GB)
     //   - Check if publication `group` can be mapped to `github-org/github-repo-name`.
-    //   - Check if gh cli is installed.
-    //   - Check if gh cli is authenticated.
-    //   - Check if gh cli has access to GitHub repo.
+    //   - Check gh api token is valid and has `repo` scope
     //   - Check the release version is valid and consistent across all GMM module files.
     //   - Check the release group is valid and consistent across all GMM module files.
     //   - Check if repo already has release.
