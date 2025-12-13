@@ -13,21 +13,8 @@ import kotlin.io.encoding.Base64
 import kotlin.io.path.createDirectories
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
-import org.gradle.api.NamedDomainObjectProvider
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.artifacts.ResolvableConfiguration
-import org.gradle.api.attributes.Bundling.BUNDLING_ATTRIBUTE
-import org.gradle.api.attributes.Bundling.SHADOWED
-import org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE
-import org.gradle.api.attributes.Category.LIBRARY
-import org.gradle.api.attributes.LibraryElements.JAR
-import org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE
-import org.gradle.api.attributes.Usage.JAVA_RUNTIME
-import org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.ProjectLayout
 import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
@@ -76,6 +63,7 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
         standardOutput = OutputStream.nullOutputStream()
         errorOutput = OutputStream.nullOutputStream()
         maxHeapSize = "32m"
+        isIgnoreExitValue = true
       }
     }
 
