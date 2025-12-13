@@ -1,0 +1,45 @@
+name: Publish Maven
+
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkout-ref:
+        description: "The branch, tag or SHA to checkout. See actions/checkout 'ref'."
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      checkout-ref:
+        description: "The branch, tag or SHA to checkout. See actions/checkout 'ref'."
+        required: false
+        type: string
+
+
+concurrency:
+  group: "Publish Maven: ${{ github.workflow }}"
+  cancel-in-progress: false
+
+
+permissions:
+  contents: write
+  packages: write
+  checks: write
+
+
+jobs:
+
+  sonatype-release:
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+      checks: write
+    uses: .github/workflows/run_gradle_task.yml
+    secrets: inherit
+    with:
+      runs-on: macos-latest # only macOS supports building all Kotlin targets
+      gradle-task: >-
+        :nmcpPublish
+        --stacktrace
+      checkout-ref: ${{ inputs.checkout-ref }}
