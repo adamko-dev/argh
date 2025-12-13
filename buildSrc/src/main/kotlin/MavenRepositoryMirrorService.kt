@@ -1,5 +1,6 @@
 package buildsrc
 
+import java.io.File
 import java.io.OutputStream
 import java.net.ServerSocket
 import java.net.URI
@@ -13,10 +14,23 @@ import kotlin.io.encoding.Base64
 import kotlin.io.path.createDirectories
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
+import org.gradle.api.NamedDomainObjectProvider
+import org.gradle.api.Project
+import org.gradle.api.artifacts.ResolvableConfiguration
+import org.gradle.api.attributes.Bundling.BUNDLING_ATTRIBUTE
+import org.gradle.api.attributes.Bundling.SHADOWED
+import org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE
+import org.gradle.api.attributes.Category.LIBRARY
+import org.gradle.api.attributes.LibraryElements.JAR
+import org.gradle.api.attributes.LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE
+import org.gradle.api.attributes.Usage.JAVA_RUNTIME
+import org.gradle.api.attributes.Usage.USAGE_ATTRIBUTE
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.Directory
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.logging.Logger
 import org.gradle.api.logging.Logging
+import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters
 import org.gradle.kotlin.dsl.*
@@ -73,19 +87,28 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
       }
     }
 
-
+  @Synchronized
   fun launch(): Int {
     // --working-directory
     // --plugin-directory
     // --local-config
     // --port
 
-    thread.start()
-    logger.info("Launching maven repository mirror at http://localhost:$port/")
+    if (thread.state != Thread.State.NEW) {
+      // already started
+      return port
+    }
 
-    waitUntilServerUp()
+    try {
+      thread.start()
+      logger.info("Launching maven repository mirror at http://localhost:$port/")
 
-    updateMirrors()
+      waitUntilServerUp()
+
+      updateMirrors()
+    } catch (_: IllegalThreadStateException) {
+      // already started
+    }
 
     return port
   }
@@ -184,5 +207,48 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
 
   companion object {
     private val logger: Logger = Logging.getLogger(MavenRepositoryMirrorService::class.java)
+
+    internal fun register(project: Project): Provider<MavenRepositoryMirrorService> {
+      val projectPathAsFileName: String =
+        project.path.map { if (it.isLetterOrDigit()) it else "_" }.joinToString("")
+
+      val reposiliteDir: Provider<Directory> =
+        project.objects.directoryProperty()
+          .fileProvider(
+            project.providers.environmentVariable("REPOSILITE_DIR")
+              .map { File(it).resolve(projectPathAsFileName) }
+          )
+          .orElse(project.layout.buildDirectory.dir("reposilite"))
+
+      val reposiliteJarResolver = reposiliteJarResolver(project)
+
+      return project.gradle.sharedServices.registerIfAbsent(
+        "mavenRepositoryMirrorService_${project.path}",
+        MavenRepositoryMirrorService::class
+      ) {
+        val reposiliteDir = reposiliteDir
+        parameters.reposiliteDir.set(reposiliteDir)
+        parameters.reposiliteJar.from(reposiliteJarResolver)
+      }
+    }
+
+    private fun reposiliteJarResolver(project: Project): NamedDomainObjectProvider<ResolvableConfiguration> {
+      val dependencyScope = project.configurations.dependencyScope("reposiliteClasspath") {
+        defaultDependencies {
+          add(project.dependencies.create("com.reposilite:reposilite:3.5.26"))
+        }
+      }
+
+      return project.configurations.resolvable(dependencyScope.name + "Resolver") {
+        extendsFrom(dependencyScope.get())
+        attributes {
+          attribute(CATEGORY_ATTRIBUTE, project.objects.named(LIBRARY))
+          attribute(BUNDLING_ATTRIBUTE, project.objects.named(SHADOWED))
+          attribute(LIBRARY_ELEMENTS_ATTRIBUTE, project.objects.named(JAR))
+          attribute(USAGE_ATTRIBUTE, project.objects.named(JAVA_RUNTIME))
+        }
+      }
+    }
+
   }
 }
