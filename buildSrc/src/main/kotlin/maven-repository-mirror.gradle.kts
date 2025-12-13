@@ -32,7 +32,16 @@ val serviceProvider: Provider<MavenRepositoryMirrorService> = project.gradle.sha
   MavenRepositoryMirrorService::class
 ) {
   parameters.reposiliteJar.from(reposiliteJarResolver())
-  parameters.reposiliteDir.set(layout.buildDirectory.dir("reposilite"))
+
+  parameters.reposiliteDir.set(
+    layout.dir(
+      providers.environmentVariable("REPOSILITE_DIR")
+        .map { File(it) }
+        .filter { it.exists() }
+    ).orElse(
+      layout.buildDirectory.dir("reposilite")
+    )
+  )
 }
 
 project.extensions.create("mavenRepositoryMirror", MavenRepositoryMirrorExtension::class, serviceProvider)

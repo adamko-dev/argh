@@ -51,7 +51,15 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     name: "./gradlew ${{ inputs.gradle-task}} @ ${{ inputs.runs-on }}"
     timeout-minutes: 60
+    env:
+      REPOSILITE_DIR: .cache/reposilite
     steps:
+
+      - name: Restore Reposilite cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.REPOSILITE_DIR }}
+          key: ${{ runner.os }}-reposilite
 
       ### Gradle task ###
 
@@ -71,9 +79,6 @@ jobs:
             11
             17
             21
-
-      - name: Setup Android SDK # required for integration tests
-        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
