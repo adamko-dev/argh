@@ -50,19 +50,23 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
       isDaemon = true,
       start = false,
     ) {
-      execOps.javaexec {
-        classpath = parameters.reposiliteJar
-        workingDir(reposiliteDir.toFile())
-        args = listOf(
-          "--port=$port",
-          "--hostname=127.0.0.1",
-          "--no-color",
-          "--token", credentials,
-        )
-        standardOutput = OutputStream.nullOutputStream()
-        errorOutput = OutputStream.nullOutputStream()
-        maxHeapSize = "32m"
-        isIgnoreExitValue = true
+      try {
+        execOps.javaexec {
+          classpath = parameters.reposiliteJar
+          workingDir(reposiliteDir.toFile())
+          args = listOf(
+            "--port=$port",
+            "--hostname=127.0.0.1",
+            "--no-color",
+            "--token", credentials,
+          )
+          standardOutput = OutputStream.nullOutputStream()
+          errorOutput = OutputStream.nullOutputStream()
+          maxHeapSize = "32m"
+          isIgnoreExitValue = true
+        }
+      } catch (_: InterruptedException) {
+        // ignore
       }
     }
 
