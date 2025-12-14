@@ -80,7 +80,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.KONAN_DATA_DIR }}
-          key: ${{ runner.os }}-reposilite
+          key: ${{ runner.os }}-konan
       #endregion
 
       - name: Checkout the repo
