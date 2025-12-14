@@ -37,6 +37,10 @@ kotlin {
   }
 }
 
+java {
+  withSourcesJar()
+}
+
 dependencies {
   compileOnly(gradleApi())
   compileOnly(gradleKotlinDsl())

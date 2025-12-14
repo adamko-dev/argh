@@ -9,10 +9,13 @@ plugins {
   id("buildsrc.base")
   kotlin("jvm")
   id("dev.adamko.dev-publish")
+  id("org.jetbrains.dokka")
 }
 
 kotlin {
   jvmToolchain(21)
+
+  target.withSourcesJar()
 
   compilerOptions {
     jvmTarget = JvmTarget.JVM_17
@@ -51,5 +54,20 @@ sourceSets.configureEach {
 tasks.withType<Test>().configureEach {
   testLogging {
     setEvents(TestLogEvent.entries)
+  }
+}
+
+plugins.withType<MavenPublishPlugin>().configureEach {
+  val dokkaHtmlJar by tasks.registering(Jar::class) {
+    from(tasks.dokkaGeneratePublicationHtml)
+    archiveClassifier.set("javadoc")
+  }
+
+  extensions.configure<PublishingExtension> {
+    publications {
+      withType<MavenPublication>().configureEach {
+        artifact(dokkaHtmlJar)
+      }
+    }
   }
 }

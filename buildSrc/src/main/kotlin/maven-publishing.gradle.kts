@@ -50,23 +50,24 @@ publishing {
   }
 }
 
-
 signing {
-  logger.info("maven-publishing.gradle.kts enabled signing for ${project.path}")
-
   val keyId = mavenPublishing.signingKeyId.orNull
   val key = mavenPublishing.signingKey.orNull
   val password = mavenPublishing.signingPassword.orNull
 
-  if (!keyId.isNullOrBlank() && !key.isNullOrBlank() && !password.isNullOrBlank()) {
+  val signingCredentialsPresent =
+    !keyId.isNullOrBlank() && !key.isNullOrBlank() && !password.isNullOrBlank()
+
+  if (signingCredentialsPresent) {
+    logger.info("maven-publishing.gradle.kts enabled signing for ${project.displayName}")
     useInMemoryPgpKeys(keyId, key, password)
   }
 
   setRequired({
-    gradle.taskGraph.allTasks
+    signingCredentialsPresent || gradle.taskGraph.allTasks
       .filterIsInstance<PublishToMavenRepository>()
-      .any {
-        it.repository.name in setOf(
+      .any { task ->
+        task.repository.name in setOf(
           "SonatypeRelease",
         )
       }
@@ -95,15 +96,15 @@ tasks.withType<AbstractPublishToMaven>().configureEach {
 //endregion
 
 
-////region Maven Central can't handle parallel uploads, so limit parallel uploads with a service.
-//abstract class MavenPublishLimiter : BuildService<BuildServiceParameters.None>
-//
-//val mavenPublishLimiter =
-//  gradle.sharedServices.registerIfAbsent("mavenPublishLimiter", MavenPublishLimiter::class) {
-//    maxParallelUsages = 1
-//  }
-//
-//tasks.withType<PublishToMavenRepository>().configureEach {
-//  usesService(mavenPublishLimiter)
-//}
-////endregion
+//region Maven Central can't handle parallel uploads, so limit parallel uploads with a service.
+abstract class MavenPublishLimiter : BuildService<BuildServiceParameters.None>
+
+val mavenPublishLimiter =
+  gradle.sharedServices.registerIfAbsent("mavenPublishLimiter", MavenPublishLimiter::class) {
+    maxParallelUsages = 1
+  }
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+  usesService(mavenPublishLimiter)
+}
+//endregion
