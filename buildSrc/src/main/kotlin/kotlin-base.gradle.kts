@@ -15,8 +15,6 @@ plugins {
 kotlin {
   jvmToolchain(21)
 
-  target.withSourcesJar()
-
   compilerOptions {
     jvmTarget = JvmTarget.JVM_17
 

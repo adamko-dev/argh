@@ -5,6 +5,10 @@ plugins {
   id("buildsrc.maven-publishing")
 }
 
+java {
+  withSourcesJar()
+}
+
 publishing {
   publications {
     register<MavenPublication>("mavenJava") {
