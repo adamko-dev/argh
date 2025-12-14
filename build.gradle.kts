@@ -1,5 +1,7 @@
+@file:Suppress("UnstableApiUsage")
+
 plugins {
-  base
+  buildsrc.base
   idea
   `kotlin-dsl` apply false
   id("com.gradleup.nmcp.aggregation")
@@ -45,15 +47,23 @@ dependencies {
   nmcpAggregation(projects.modules.mavenPluginRepository)
 }
 
+val publishAggregationToCentralPortal: TaskProvider<Task> =
+  tasks.named("publishAggregationToCentralPortal").apply {
+    configure {
+      val isReleaseVersion = mavenPublishing.isReleaseVersion
+      onlyIf("is release version") { isReleaseVersion.get() }
+    }
+  }
+val publishAggregationToCentralPortalSnapshots: TaskProvider<Task> =
+  tasks.named("publishAggregationToCentralPortalSnapshots").apply {
+    configure {
+      val isReleaseVersion = mavenPublishing.isReleaseVersion
+      onlyIf("is snapshot version") { !isReleaseVersion.get() }
+    }
+  }
+
 tasks.register("nmcpPublish") {
   group = PublishingPlugin.PUBLISH_TASK_GROUP
-  dependsOn(
-    mavenPublishing.isReleaseVersion.map { isRelease ->
-      if (isRelease) {
-        "publishAggregationToCentralPortal"
-      } else {
-        "publishAggregationToCentralPortalSnapshots"
-      }
-    }
-  )
+  dependsOn(publishAggregationToCentralPortal)
+  dependsOn(publishAggregationToCentralPortalSnapshots)
 }
