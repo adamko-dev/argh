@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package dev.adamko.githubapiclient.auth
 
 import java.io.IOException
@@ -17,7 +19,6 @@ internal data class StoredTokenData internal constructor(
 //  val refreshTokenExpiresAt: Instant,
 ) {
   companion object {
-    @OptIn(ExperimentalSerializationApi::class)
     private val json: Json = Json {
       prettyPrint = true
       prettyPrintIndent = "  "
