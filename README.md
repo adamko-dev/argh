@@ -84,7 +84,7 @@ plugins {
 #### Maven
 
 To resolve Argh publications from Maven the Argh Maven Repository plugin must be added to the `extensions.xml`.
-Once added,
+Once added, in the project's POM add a repository with the URL set to `https://github.com` and the layout set to `argh`.
 
 ###### `.mvn/extensions.xml`
 
