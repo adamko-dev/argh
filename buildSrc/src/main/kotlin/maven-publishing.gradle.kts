@@ -50,6 +50,15 @@ publishing {
   }
 }
 
+afterEvaluate {
+  // com.gradle.plugin-publish automatically signs tasks in a weird way,
+  // afterEvaluate makes it work?
+  signing {
+    sign(publishing.publications)
+  }
+}
+//endregion
+
 signing {
   val keyId = mavenPublishing.signingKeyId.orNull
   val key = mavenPublishing.signingKey.orNull
