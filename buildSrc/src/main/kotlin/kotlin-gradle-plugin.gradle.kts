@@ -2,10 +2,25 @@
 
 package buildsrc
 
+import buildsrc.settings.MavenPublishingSettings.Companion.mavenPublishing
+
 plugins {
   id("buildsrc.kotlin-base")
   id("buildsrc.maven-publishing")
   `java-gradle-plugin`
+}
+
+gradlePlugin {
+  isAutomatedPublishing = true
+}
+
+tasks.validatePlugins {
+  enableStricterValidation.set(true)
+}
+
+gradlePlugin.plugins.configureEach {
+  description = project.description
+  displayName = mavenPublishing.pomName.get()
 }
 
 kotlin {

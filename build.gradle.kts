@@ -46,6 +46,7 @@ dependencies {
 }
 
 tasks.register("nmcpPublish") {
+  group = PublishingPlugin.PUBLISH_TASK_GROUP
   dependsOn(
     mavenPublishing.isReleaseVersion.map { isRelease ->
       if (isRelease) {
