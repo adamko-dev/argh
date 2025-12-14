@@ -5,7 +5,15 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 
 abstract class MavenCliSetupExtension {
+
+  /**
+   * The version of `org.apache.maven` dependencies..
+   */
   abstract val mavenVersion: Property<String>
+
+  /**
+   * The version of `org.apache.maven.plugin-tools` dependencies.
+   */
   abstract val mavenPluginToolsVersion: Property<String>
 
   /** Directory that will contain the unpacked Apache Maven dependency */

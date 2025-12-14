@@ -1,20 +1,21 @@
 [versions]
 
 kotlinx-serialization = "1.9.0"
+kotlinx-coroutines = "1.10.2"
 
 apacheMaven-core = "3.9.11"
 apacheMaven-pluginTools = "3.15.2"
-apacheMaven-resolverSpi = "1.9.18"
 
 slf4j = "2.0.17"
 
 ktor = "3.3.3"
 
-kotlinx-coroutines = "1.10.2"
+dokka = "2.1.0"
+
+reposilite = "3.5.26"
 
 gradlePlugin-nmcp = "1.3.0"
-
-dokka = "2.1.0"
+gradlePlugin-devPublish = "0.4.2"
 
 [libraries]
 
@@ -22,7 +23,6 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 
 apacheMaven-pluginApi = { module = "org.apache.maven:maven-plugin-api", version.ref = "apacheMaven-core" }
 apacheMaven-core = { module = "org.apache.maven:maven-core", version.ref = "apacheMaven-core" }
-apacheMaven-resolverSpi = { module = "org.apache.maven.resolver:maven-resolver-spi" }
 apacheMaven-pluginAnnotations = { module = "org.apache.maven.plugin-tools:maven-plugin-annotations", version.ref = "apacheMaven-pluginTools" }
 
 apacheMaven-model = { module = "org.apache.maven:maven-model", version.ref = "apacheMaven-core" }
@@ -39,12 +39,14 @@ ktorClient-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiat
 ktorClient-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
 ktorClient-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
 
-
 ktorSerialization-kotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
 kotlinx-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 
-gradlePlugin-nmcp = { module = "com.gradleup.nmcp:nmcp", version.ref = "gradlePlugin-nmcp" }
+reposilite = { module = "com.reposilite:reposilite", version.ref = "reposilite" }
+
+gradlePlugin-devPublish = { module = "dev.adamko.gradle:dev-publish-plugin", version.ref = "gradlePlugin-devPublish" }
 gradlePlugin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+gradlePlugin-nmcp = { module = "com.gradleup.nmcp:nmcp", version.ref = "gradlePlugin-nmcp" }
 
 [plugins]
