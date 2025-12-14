@@ -9,4 +9,5 @@ dependencies {
   implementation("dev.adamko.gradle:dev-publish-plugin:0.4.2")
 
   implementation(libs.gradlePlugin.nmcp)
+  implementation(libs.gradlePlugin.dokka)
 }
