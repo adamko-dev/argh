@@ -28,23 +28,6 @@ abstract class MavenPublishingSettings @Inject constructor(
     arghProp("mavenCentralPassword")
       .orElse(providers.environmentVariable("MAVEN_SONATYPE_PASSWORD"))
 
-
-  val adamkoDevReleaseUrl: Provider<String> =
-    isReleaseVersion.map { isRelease ->
-      if (isRelease) {
-        "https://europe-west4-maven.pkg.dev/adamko-dev/adamko-dev-releases"
-      } else {
-        "https://europe-west4-maven.pkg.dev/adamko-dev/adamko-dev-snapshots"
-      }
-    }
-  val adamkoDevUsername: Provider<String> =
-    arghProp("adamkoDevUsername")
-      .orElse(providers.environmentVariable("MAVEN_ADAMKO_DEV_USERNAME"))
-  val adamkoDevPassword: Provider<String> =
-    arghProp("adamkoDevPassword")
-      .orElse(providers.environmentVariable("MAVEN_ADAMKO_DEV_PASSWORD"))
-
-
   val signingKeyId: Provider<String> =
     arghProp("signing.keyId")
       .orElse(providers.environmentVariable("MAVEN_SONATYPE_SIGNING_KEY_ID"))

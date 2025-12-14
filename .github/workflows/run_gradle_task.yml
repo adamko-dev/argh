@@ -97,9 +97,6 @@ jobs:
           MAVEN_SONATYPE_SIGNING_KEY: ${{ secrets.MAVEN_SONATYPE_SIGNING_KEY }}
           MAVEN_SONATYPE_SIGNING_PASSWORD: ${{ secrets.MAVEN_SONATYPE_SIGNING_PASSWORD }}
 
-          MAVEN_ADAMKO_DEV_USERNAME: ${{ vars.MAVEN_ADAMKO_DEV_USERNAME }}
-          MAVEN_ADAMKO_DEV_PASSWORD: ${{ secrets.MAVEN_ADAMKO_DEV_PASSWORD }}
-
           "ORG_GRADLE_PROJECT_gradle.publish.key": ${{ secrets.GRADLE_PLUGIN_PORTAL_KEY }}
           "ORG_GRADLE_PROJECT_gradle.publish.secret": ${{ secrets.GRADLE_PLUGIN_PORTAL_SECRET }}
 
