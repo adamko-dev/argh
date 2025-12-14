@@ -48,6 +48,9 @@ internal constructor(
   @get:Input
   abstract val releaseVersion: Property<String>
 
+  /**
+   * See [dev.adamko.argh.gradle.publisher.ArghPublishExtension.gitHubOAuthToken]
+   */
   @get:Internal
   abstract val gitHubOAuthToken: Property<GitHubOAuthTokenSource>
 
@@ -82,19 +85,14 @@ internal constructor(
       spec.mainClass.set("dev.adamko.argh.lib.uploader.Uploader")
       spec.classpath(runtimeClasspath.files)
       spec.args(
-        buildList {
-          add("gitHubRepo=${gitHubRepo.get()}")
-          add("releaseVersion=${releaseVersion.get()}")
-          add("createNewReleaseIfMissing=${createNewReleaseIfMissing.get()}")
-          add("releaseDir=${preparedAssetsDir.get().asFile.invariantSeparatorsPath}")
-          add("pluginCacheDir=${pluginCacheDir.get().asFile.invariantSeparatorsPath}")
-          add(
-            "gitHubOAuthToken=" +
-                when (gitHubOAuthToken.get()) {
-                  GitHubOAuthTokenSource.EnvVar -> "EnvVar"
-                }
-          )
-        }
+        mapOf(
+          "gitHubRepo" to gitHubRepo.get(),
+          "releaseVersion" to releaseVersion.get(),
+          "createNewReleaseIfMissing" to createNewReleaseIfMissing.get().toString(),
+          "releaseDir" to preparedAssetsDir.get().asFile.invariantSeparatorsPath,
+          "pluginCacheDir" to pluginCacheDir.get().asFile.invariantSeparatorsPath,
+          "gitHubOAuthToken" to gitHubOAuthToken.get().encodeAsArg(),
+        ).map { (key: String, value: String) -> "$key=$value" }
       )
     }
   }

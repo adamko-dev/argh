@@ -14,6 +14,8 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.path.Path
+import kotlin.io.path.readText
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
@@ -45,7 +47,7 @@ internal class ObtainAuthToken(
   private val statusCache = ConcurrentHashMap<String, Boolean>()
 
   /**
-   * Is there a `GITHUB_TOKEN` environment variable? If so, use it.
+   * Try fetching a token from `gitHubOAuthToken`
    *
    * Otherwise, check the config dir for a stored token.
    *
@@ -55,10 +57,12 @@ internal class ObtainAuthToken(
    */
   suspend fun action(): GitHubAuthToken = lock.withLock {
 
-    val envToken = when (gitHubOAuthToken) {
-      "EnvVar" -> System.getenv("GITHUB_TOKEN")
-      else -> null
+    val envToken = when {
+      gitHubOAuthToken == "EnvVar"         -> System.getenv("GITHUB_TOKEN")
+      gitHubOAuthToken.startsWith("File:") -> Path(gitHubOAuthToken.removePrefix("File:")).readText().trim()
+      else                                 -> null
     }
+
     if (envToken != null) {
       return GitHubAuthToken(envToken)
     }
@@ -66,20 +70,20 @@ internal class ObtainAuthToken(
     val tokenData = authTokenStore.load()
 
     when {
-      tokenData == null                                                      ->
+      tokenData == null                  ->
         println("No token found")
 
 //      (tokenData.accessTokenExpiresAt + expirationFudgeFactor) < clock.now() ->
 //        println("Token ${tokenData.accessToken} expired ${tokenData.accessTokenExpiresAt} vs now:${clock.now() - 60.seconds}.")
 
-      !checkToken(tokenData.accessToken)                                     -> {
+      !checkToken(tokenData.accessToken) -> {
         println("Token ${tokenData.accessToken} is not valid")
       }
 //      statusCache[tokenData.accessToken.token] != true                       -> {
 //        println("Token ${tokenData.accessToken} is not valid")
 //      }
 
-      else                                                                   -> {
+      else                               -> {
         println("Token ${tokenData.accessToken} is valid")
         return tokenData.accessToken
       }
@@ -206,7 +210,7 @@ internal class ObtainAuthToken(
           return auth
         }
 
-        is AccessStatusResponse.Error   -> {
+        is AccessStatusResponse.Error        -> {
           when (auth.error) {
             AuthorizationPending ->
               continue
