@@ -55,13 +55,33 @@ jobs:
       REPOSILITE_DIR: .cache/reposilite
     steps:
 
+      ### Gradle task ###
+
       - name: Restore Reposilite cache
         uses: actions/cache@v4
         with:
           path: ${{ env.REPOSILITE_DIR }}
           key: ${{ runner.os }}-reposilite
 
-      ### Gradle task ###
+      #region Cache Konan
+      # (Argh does not use KMP directly, but KMP projects are used in integration tests.)
+      - name: "Set KONAN_DATA_DIR (Windows)"
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          echo KONAN_DATA_DIR=C:\Users\runneradmin\.konan>>%GITHUB_ENV%
+
+      - name: "Set KONAN_DATA_DIR (bash)"
+        if: runner.os != 'Windows'
+        run: |
+          echo "KONAN_DATA_DIR=${HOME}/.konan" >> $GITHUB_ENV
+
+      - name: Restore Konan cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.KONAN_DATA_DIR }}
+          key: ${{ runner.os }}-reposilite
+      #endregion
 
       - name: Checkout the repo
         uses: actions/checkout@v4
