@@ -2,6 +2,7 @@ package buildsrc
 
 import buildsrc.tasks.MvnExec
 import buildsrc.utils.createDependencyNotation
+import kotlin.jvm.optionals.getOrNull
 import org.gradle.kotlin.dsl.support.serviceOf
 
 /**
@@ -17,10 +18,16 @@ plugins {
   base
 }
 
+val libs: VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
+
 val mavenCliSetupExtension =
   extensions.create("mavenCliSetup", MavenCliSetupExtension::class).apply {
-//    mavenVersion.convention(libs.versions.apacheMaven.core)
-//    mavenPluginToolsVersion.convention(libs.versions.apacheMaven.pluginTools)
+    mavenVersion.convention(provider {
+      libs.findVersion("apacheMaven.core").getOrNull()?.requiredVersion
+    })
+    mavenPluginToolsVersion.convention(provider {
+      libs.findVersion("apacheMaven.pluginTools").getOrNull()?.requiredVersion
+    })
 
     mavenInstallDir.convention(layout.buildDirectory.dir("apache-maven"))
 
@@ -102,5 +109,4 @@ tasks.withType<MvnExec>().configureEach {
   workDirectory.convention(layout.dir(provider { temporaryDir }))
   showErrors.convention(true)
   batchMode.convention(true)
-//  settingsXml.convention(layout.projectDirectory.file("settings.xml"))
 }

@@ -25,11 +25,6 @@ dependencies {
   compileOnly(libs.slf4j.api)
 }
 
-mavenCliSetup {
-  mavenVersion.set(libs.versions.apacheMaven.core)
-  mavenPluginToolsVersion.set(libs.versions.apacheMaven.pluginTools)
-}
-
 tasks.withType<Test>().configureEach {
   dependsOn(tasks.installMavenBinary)
   val mvnBinary = mavenCliSetup.mvn

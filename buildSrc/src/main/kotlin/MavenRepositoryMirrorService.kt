@@ -16,7 +16,10 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ResolvableConfiguration
+import org.gradle.api.artifacts.VersionCatalog
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.attributes.Bundling.BUNDLING_ATTRIBUTE
 import org.gradle.api.attributes.Bundling.SHADOWED
 import org.gradle.api.attributes.Category.CATEGORY_ATTRIBUTE
@@ -233,13 +236,23 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     }
 
     private fun reposiliteJarResolver(project: Project): NamedDomainObjectProvider<ResolvableConfiguration> {
-      val dependencyScope = project.configurations.dependencyScope("reposiliteClasspath") {
+
+      val libs: VersionCatalog = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+
+      val reposiliteDependency: Provider<Dependency> =
+        libs.findLibrary("reposilite")
+          .orElseThrow()
+          .map { project.dependencies.create(it) }
+
+      val dependencyScope = project.configurations.dependencyScope("reposiliteJarClasspath") {
+        description = "Declares a dependency on the Reposilite JAR."
         defaultDependencies {
-          add(project.dependencies.create("com.reposilite:reposilite:3.5.26"))
+          addLater(reposiliteDependency)
         }
       }
 
       return project.configurations.resolvable(dependencyScope.name + "Resolver") {
+        description = "Resolves ${dependencyScope.name}."
         extendsFrom(dependencyScope.get())
         attributes {
           attribute(CATEGORY_ATTRIBUTE, project.objects.named(LIBRARY))
