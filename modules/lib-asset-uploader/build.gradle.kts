@@ -3,6 +3,7 @@ plugins {
 }
 
 description = "Internal Argh library. A shared library for handling GitHub Asset publications."
+mavenPublishing.pomName = "Argh | GitHub uploader"
 
 dependencies {
   implementation(projects.modules.libGmm)

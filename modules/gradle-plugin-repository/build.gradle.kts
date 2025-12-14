@@ -4,6 +4,7 @@ plugins {
 
 description =
   "This Gradle plugin resolves artifacts published to GitHub Release Assets by the Argh publisher plugins."
+mavenPublishing.pomName = "Argh | Gradle Repository Plugin"
 
 gradlePlugin {
   plugins {

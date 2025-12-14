@@ -3,3 +3,4 @@ plugins {
 }
 
 description = "Internal Argh library. Shared utilities."
+mavenPublishing.pomName = "Argh | Utilities"

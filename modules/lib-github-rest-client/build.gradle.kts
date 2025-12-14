@@ -4,6 +4,7 @@ plugins {
 }
 
 description = "Internal Argh library. GitHub REST API client."
+mavenPublishing.pomName = "Argh | GitHub REST API client"
 
 dependencies {
   implementation(libs.kotlinx.serialization.json)

@@ -8,6 +8,7 @@ plugins {
 
 description =
   "This Maven Extension resolves artifacts published to GitHub Release Assets by the Argh publisher plugins."
+mavenPublishing.pomName = "Argh | Maven Repository Plugin"
 
 dependencies {
   implementation(projects.modules.libGmm)

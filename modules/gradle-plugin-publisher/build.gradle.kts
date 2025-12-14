@@ -9,7 +9,9 @@ import kotlin.io.path.writeText
 plugins {
   buildsrc.`kotlin-gradle-plugin`
 }
+
 description = "Argh Gradle plugin for attaching Maven publications as GitHub Release Assets."
+mavenPublishing.pomName = "Argh | Gradle Publisher Plugin"
 
 gradlePlugin {
   plugins {

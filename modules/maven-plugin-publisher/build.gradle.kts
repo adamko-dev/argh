@@ -5,6 +5,7 @@ plugins {
 }
 
 description = "Argh Maven plugin for attaching Maven publications as GitHub Release Assets."
+mavenPublishing.pomName = "Argh | Maven Publisher Plugin"
 
 dependencies {
   implementation(projects.modules.libGmm)
