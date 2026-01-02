@@ -60,7 +60,7 @@ jobs:
       packages: write
       checks: write
     with:
-      runs-on: macos-latest
+      runs-on: ubuntu-latest
       gradle-task: >-
         publishPlugins
         --stacktrace
