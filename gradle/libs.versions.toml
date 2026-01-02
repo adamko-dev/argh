@@ -14,7 +14,7 @@ dokka = "2.1.0"
 
 reposilite = "3.5.26"
 
-gradlePlugin-nmcp = "1.3.0"
+gradlePlugin-nmcp = "1.4.3"
 gradlePlugin-devPublish = "0.4.2"
 
 [libraries]
