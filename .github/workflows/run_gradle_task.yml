@@ -58,7 +58,7 @@ jobs:
       ### Gradle task ###
 
       - name: Restore Reposilite cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.REPOSILITE_DIR }}
           key: ${{ runner.os }}-reposilite
@@ -77,7 +77,7 @@ jobs:
           echo "KONAN_DATA_DIR=${HOME}/.konan" >> $GITHUB_ENV
 
       - name: Restore Konan cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.KONAN_DATA_DIR }}
           key: ${{ runner.os }}-konan
