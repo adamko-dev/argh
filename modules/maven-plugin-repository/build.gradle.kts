@@ -48,7 +48,7 @@ testing {
 
     val test by getting(JvmTestSuite::class) {
       dependencies {
-        implementation(platform("org.junit:junit-bom:6.0.1"))
+        implementation(platform("org.junit:junit-bom:6.0.2"))
         implementation("org.junit.jupiter:junit-jupiter")
         runtimeOnly("org.junit.platform:junit-platform-launcher")
       }
@@ -56,7 +56,7 @@ testing {
 
     val testIntegration by registering(JvmTestSuite::class) {
       dependencies {
-        implementation(platform("org.junit:junit-bom:6.0.1"))
+        implementation(platform("org.junit:junit-bom:6.0.2"))
         implementation("org.junit.jupiter:junit-jupiter")
         runtimeOnly("org.junit.platform:junit-platform-launcher")
       }
