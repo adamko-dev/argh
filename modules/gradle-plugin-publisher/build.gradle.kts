@@ -45,7 +45,7 @@ testing {
     val testIntegration by registering(JvmTestSuite::class) {
       dependencies {
         implementation(gradleTestKit())
-        implementation("org.junit.jupiter:junit-jupiter:6.0.1")
+        implementation("org.junit.jupiter:junit-jupiter:6.0.2")
         runtimeOnly("org.junit.platform:junit-platform-launcher")
       }
 
