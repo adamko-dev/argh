@@ -89,7 +89,7 @@ jobs:
           ref: ${{ inputs.checkout-ref || github.ref }}
 
       - name: Validate Gradle Wrapper
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@v5
 
       - name: Setup JDKs
         uses: actions/setup-java@v5
@@ -101,7 +101,7 @@ jobs:
             21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
         with:
           cache-cleanup: always
           # write build cache on 'main' and 'release' branches, or tags (default is 'main' only)
