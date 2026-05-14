@@ -12,6 +12,7 @@ import javax.inject.Inject
 import kotlin.concurrent.thread
 import kotlin.io.encoding.Base64
 import kotlin.io.path.createDirectories
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import org.gradle.api.NamedDomainObjectProvider
@@ -116,7 +117,9 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     return port
   }
 
-  private fun waitUntilServerUp() {
+  private fun waitUntilServerUp(
+    startLimit: Duration = 30.0.seconds,
+  ) {
     val timeMark = TimeSource.Monotonic.markNow()
     val client = HttpClient.newHttpClient()
     val request = HttpRequest
@@ -125,8 +128,8 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
       .GET()
       .build()
     while (true) {
-      if (timeMark.elapsedNow() > 10.0.seconds) {
-        error("Reposilite server didn't start in 10 seconds")
+      if (timeMark.elapsedNow() > startLimit) {
+        error("Reposilite server didn't start in $startLimit")
       }
       val response = try {
         client.send(
@@ -146,50 +149,56 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
   }
 
   private fun updateMirrors() {
+    // Only allow artifacts, not checksums/signatures.
+    // Reposilite computes checksums locally, avoiding extra upstream requests per artifact
+    // (which reduces 429 risk from Maven Central).
+    val allowedExtensions = setOf(
+      ".klib",
+      ".jar",
+      ".war",
+      ".pom",
+      ".xml",
+      ".module",
+    ).joinToString(", ") { "\"$it\"" }
 
     val request = HttpRequest.newBuilder(URI("http://localhost:$port/api/settings/domain/maven"))
       .header("Authorization", "xBasic $credentialsEncoded")
       .PUT(
         HttpRequest.BodyPublishers.ofString(
-          """
-           {
-            "repositories": [
-              {
-                "id": "releases",
-                "visibility": "PUBLIC",
-                "redeployment": false,
-                "preserveSnapshots": false,
-                "storageProvider": {
-                  "type": "fs",
-                  "quota": "100%",
-                  "mount": "",
-                  "maxResourceLockLifetimeInSeconds": 60,
-                  "allowedExtensions": [
-                    ".klib",
-                    ".jar",
-                    ".war",
-                    ".pom",
-                    ".xml",
-                    ".module",
-                    ".md5",
-                    ".sha1",
-                    ".sha256",
-                    ".sha512",
-                    ".asc"
-                  ]
-                },
-                "storagePolicy": "PRIORITIZE_UPSTREAM_METADATA",
-                "metadataMaxAge": 0,
-                "proxied": [
-                  {
-                    "reference": "https://oss.sonatype.org/content/repositories/releases/",
-                    "store": true
-                  }
-                ]
-              }
-            ]
-          }
-        """.trimIndent()
+          /* language=json */ """
+          |{
+          |  "repositories": [
+          |    {
+          |      "id": "releases",
+          |      "visibility": "PUBLIC",
+          |      "redeployment": false,
+          |      "preserveSnapshots": false,
+          |      "storagePolicy": "STRICT",
+          |      "metadataMaxAge": 3600,
+          |      "connectTimeout": 30,
+          |      "readTimeout": 30,
+          |      "storageProvider": {
+          |        "type": "fs",
+          |        "quota": "100%",
+          |        "mount": "",
+          |        "maxResourceLockLifetimeInSeconds": 60,
+          |        "allowedExtensions": [ $allowedExtensions ]
+          |      },
+          |      "proxied": [
+          |        {
+          |          "reference": "https://repo1.maven.org/maven2",
+          |          "store": true,
+          |          "storagePolicy": "STRICT",
+          |          "metadataMaxAge": 3600,
+          |          "connectTimeout": 30,
+          |          "readTimeout": 30,
+          |          "allowedExtensions": [ $allowedExtensions ]
+          |        }
+          |      ]
+          |    }
+          |  ]
+          |}
+        """.trimMargin()
         )
       )
       .build()
@@ -198,7 +207,12 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
     val response = client.send(request, HttpResponse.BodyHandlers.ofString())
 
     check(response.statusCode() == 200) {
-      "Failed to update reposilite mirrors: ${response.body()}"
+      """
+        |Failed to update reposilite mirrors.
+        |Status code: ${response.statusCode()}
+        |${response.body()}
+        |Log: ${reposiliteDir.resolve("latest.log").toUri()}
+      """.trimMargin().trim()
     }
 
     logger.info("Updated mirrors: ${response.body()}")
@@ -229,7 +243,6 @@ abstract class MavenRepositoryMirrorService @Inject constructor(
         "mavenRepositoryMirrorService_${project.path}",
         MavenRepositoryMirrorService::class
       ) {
-        val reposiliteDir = reposiliteDir
         parameters.reposiliteDir.set(reposiliteDir)
         parameters.reposiliteJar.from(reposiliteJarResolver)
       }
