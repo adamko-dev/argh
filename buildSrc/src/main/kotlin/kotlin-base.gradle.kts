@@ -25,10 +25,6 @@ kotlin {
     freeCompilerArgs.addAll(
       "-Xconsistent-data-class-copy-visibility",
       "-Xcontext-parameters",
-      "-Xwhen-guards",
-      "-Xnon-local-break-continue",
-      "-Xmulti-dollar-interpolation",
-      "-Xnested-type-aliases",
       "-Xcontext-sensitive-resolution",
     )
 
