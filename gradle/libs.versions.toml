@@ -12,7 +12,7 @@ ktor = "3.4.0"
 
 dokka = "2.1.0"
 
-reposilite = "3.5.26"
+reposilite = "3.5.28"
 
 gradlePlugin-nmcp = "1.4.3"
 gradlePlugin-devPublish = "0.4.2"
