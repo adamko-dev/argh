@@ -43,7 +43,7 @@ class GhaMavenPublishPluginTest {
     val stdout = result.inputStream.bufferedReader().use { it.readText() }
     println(stdout)
 
-    assertEquals(0, result.exitValue())
+    assertEquals(0, result.exitValue(), "Unexpected exit code: ${result.exitValue()}")
   }
 }
 
