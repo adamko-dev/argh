@@ -20,6 +20,11 @@ internal constructor() : Plugin<PluginAware> {
   }
 
   private fun configureSettings(settings: Settings) {
+    @Suppress("UnstableApiUsage")
+    settings.dependencyResolutionManagement.repositories {
+      it.arghGitHubReleaseAssets()
+    }
+
     settings.pluginManagement.repositories {
       it.arghGitHubReleaseAssets()
     }
