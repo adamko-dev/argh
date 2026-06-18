@@ -13,6 +13,22 @@ Argh is perfect for prototyping, or sharing internal libraries.
 
 Argh is an experimental prototype. Please try it out, feedback is welcome!
 
+#### Known limitations
+
+##### Limit on attached files.
+
+Argh has a limit on the number of modules it can publish. See [Issue #17](https://github.com/adamko-dev/argh/issues/17).
+
+GitHub Releases has a hard limit on the number of attached files. Argh takes steps to limit the number of published files - approximately 8 files per published module - but larger projects will run into this limit.
+
+For example, a Gradle project with 10 subprojects, each with 10 Kotlin Multiplatform targets (hence each subproject has 10 modules), will publish approximately 800 files.
+
+##### Private repositories
+
+Argh only supports resolving releases from public repositories - see [Issue #13](https://github.com/adamko-dev/argh/issues/13).
+
+Publishing to private GitHub releases is possible, but consuming them from Gradle is not possible because GitHub does not provide an API for this, and Gradle does not support custom repositories. Consuming from Maven is theoretically possible, but is not implemented.
+
 ### Guide for Publishers
 
 ##### Requirements
